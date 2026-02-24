@@ -1,72 +1,87 @@
-import { useJourneyNavigate } from "journey-stack";
-import { services, companies, devices } from "../data";
+import { services, companies, devices, reportList } from "../data";
+import {
+  PageHeader,
+  Card,
+  RelatedItem,
+  Badge,
+  CrossNavHint,
+} from "../components/shared";
 
 export function ServiceDetail({ id }: { id: string }) {
-  const { navigate } = useJourneyNavigate();
   const service = services[id];
-
-  if (!service) return <div>Service not found</div>;
+  if (!service)
+    return (
+      <p style={{ color: "#94a3b8", padding: "40px", textAlign: "center" }}>
+        Service not found
+      </p>
+    );
 
   const provider = companies[service.provider];
-  const linked = service.linkedDevices.map((did) => devices[did]).filter(Boolean);
+  const linked = service.linkedDevices
+    .map((did) => devices[did])
+    .filter(Boolean);
+  const relatedReports = reportList.filter((r) =>
+    r.linkedServices.includes(service.id),
+  );
 
   return (
     <div>
-      <h1>{service.name}</h1>
-      <div className="detail-grid">
-        <div className="detail-field">
-          <span className="detail-label">Type</span>
-          <span>{service.type}</span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Status</span>
-          <span className={`status status-${service.status.toLowerCase()}`}>
-            {service.status}
-          </span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Cost</span>
-          <span className="mono">{service.cost}</span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Renewal</span>
-          <span>{service.renewalDate}</span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Provider</span>
-          {provider ? (
-            <button
-              className="cross-link"
-              onClick={() => navigate(`/companies/${provider.id}`, provider.name)}
-            >
-              {provider.name}
-            </button>
-          ) : (
-            <span>Unknown</span>
-          )}
-        </div>
+      <PageHeader
+        title={service.name}
+        subtitle={`Provider: ${provider?.name ?? "Unknown"} · Renews ${service.renewalDate}`}
+      />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+        <Badge color={service.status === "Active" ? "#10b981" : "#64748b"}>
+          {service.status}
+        </Badge>
+        <Badge color="#6366f1">{service.type}</Badge>
+        <Badge color="#64748b">{service.cost}</Badge>
       </div>
-
-      {linked.length > 0 && (
-        <>
-          <h2>Linked Devices</h2>
-          <p className="gesture-note">
-            navigate() &mdash; cross-domain link, creates a new chapter
-          </p>
-          <div className="card-list">
-            {linked.map((device) => (
-              <div
-                key={device.id}
-                className="card"
-                onClick={() => navigate(`/devices/${device.id}`, device.name)}
-              >
-                <h3>{device.name}</h3>
-                <p>{device.type} &middot; {device.status}</p>
-              </div>
+      <CrossNavHint>
+        Device links auto-detect as cross-domain. Report links open new
+        chapters.
+      </CrossNavHint>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "16px",
+        }}
+      >
+        {linked.length > 0 && (
+          <Card title="Linked Devices" domain="devices">
+            {linked.map((d) => (
+              <RelatedItem
+                key={d.id}
+                to={`/devices/${d.id}`}
+                label={d.name}
+                sub={`${d.type} · ${d.status}`}
+              />
             ))}
-          </div>
-        </>
-      )}
+          </Card>
+        )}
+        {relatedReports.length > 0 && (
+          <Card title="Related Reports" domain="reports">
+            {relatedReports.map((r) => (
+              <RelatedItem
+                key={r.id}
+                to={`/reports/${r.id}`}
+                label={r.title}
+                sub={r.author}
+              />
+            ))}
+          </Card>
+        )}
+        {provider && (
+          <Card title="Provider" domain="companies">
+            <RelatedItem
+              to={`/companies/${provider.id}`}
+              label={provider.name}
+              sub={provider.type}
+            />
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

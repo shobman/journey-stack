@@ -1,71 +1,78 @@
-import { useJourneyNavigate } from "journey-stack";
 import { companies, users, devices } from "../data";
+import {
+  PageHeader,
+  Card,
+  RelatedItem,
+  CrossNavHint,
+} from "../components/shared";
 
 export function CompanyDetail({ id }: { id: string }) {
-  const { navigate } = useJourneyNavigate();
   const company = companies[id];
+  if (!company)
+    return (
+      <p style={{ color: "#94a3b8", padding: "40px", textAlign: "center" }}>
+        Company not found
+      </p>
+    );
 
-  if (!company) return <div>Company not found</div>;
-
-  const companyUsers = company.users.map((uid) => users[uid]).filter(Boolean);
-  const companyDevices = company.devices.map((did) => devices[did]).filter(Boolean);
+  const companyUsers = company.users
+    .map((uid) => users[uid])
+    .filter(Boolean);
+  const companyDevices = company.devices
+    .map((did) => devices[did])
+    .filter(Boolean);
 
   return (
     <div>
-      <h1>{company.name}</h1>
-      <div className="detail-grid">
-        <div className="detail-field">
-          <span className="detail-label">Type</span>
-          <span>{company.type}</span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Contact</span>
-          <span>{company.contactName}</span>
-        </div>
-        <div className="detail-field">
-          <span className="detail-label">Email</span>
-          <span className="mono">{company.contactEmail}</span>
-        </div>
+      <PageHeader
+        title={company.name}
+        subtitle={`${company.type} · Contact: ${company.contactName}`}
+      />
+      <CrossNavHint>
+        Device links below use auto cross-domain detection. Use sidebar links to
+        stay in-chapter.
+      </CrossNavHint>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "16px",
+        }}
+      >
+        {companyDevices.length > 0 && (
+          <Card title="Devices" domain="devices">
+            {companyDevices.map((d) => (
+              <RelatedItem
+                key={d.id}
+                to={`/devices/${d.id}`}
+                label={d.name}
+                sub={`${d.type} · ${d.status}`}
+              />
+            ))}
+          </Card>
+        )}
+        {companyUsers.length > 0 && (
+          <Card title="Users" domain="companies">
+            {companyUsers.map((u) => (
+              <div
+                key={u.id}
+                style={{ padding: "9px 12px", fontSize: "14px" }}
+              >
+                <span style={{ fontWeight: 500 }}>{u.name}</span>
+                <span
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "13px",
+                    marginLeft: "12px",
+                  }}
+                >
+                  {u.role}
+                </span>
+              </div>
+            ))}
+          </Card>
+        )}
       </div>
-
-      {companyUsers.length > 0 && (
-        <>
-          <h2>Users</h2>
-          <div className="card-list">
-            {companyUsers.map((user) => (
-              <div
-                key={user.id}
-                className="card"
-                onClick={() => navigate(`/users/${user.id}`, user.name)}
-              >
-                <h3>{user.name}</h3>
-                <p>{user.role} &middot; {user.email}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {companyDevices.length > 0 && (
-        <>
-          <h2>Devices</h2>
-          <p className="gesture-note">
-            navigate() &mdash; cross-domain link to devices chapter
-          </p>
-          <div className="card-list">
-            {companyDevices.map((device) => (
-              <div
-                key={device.id}
-                className="card"
-                onClick={() => navigate(`/devices/${device.id}`, device.name)}
-              >
-                <h3>{device.name}</h3>
-                <p>{device.type} &middot; {device.status}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

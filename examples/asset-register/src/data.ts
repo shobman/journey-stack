@@ -39,6 +39,16 @@ export type User = {
   devices: string[];
 };
 
+export type Report = {
+  id: string;
+  title: string;
+  author: string;
+  date: string;
+  type: "Audit" | "Security" | "Cost Analysis" | "Compliance";
+  linkedServices: string[];
+  related: string[];
+};
+
 export const devices: Record<string, Device> = {
   d1: {
     id: "d1",
@@ -229,7 +239,38 @@ export const users: Record<string, User> = {
   },
 };
 
+export const reports: Record<string, Report> = {
+  r1: {
+    id: "r1",
+    title: "Q4 Security Audit: Vulnerability Assessment",
+    author: "David Kim",
+    date: "2025-12-15",
+    type: "Security",
+    linkedServices: ["s1", "s2"],
+    related: ["r2"],
+  },
+  r2: {
+    id: "r2",
+    title: "Cloud Cost Optimization Review",
+    author: "Sarah Chen",
+    date: "2025-11-28",
+    type: "Cost Analysis",
+    linkedServices: ["s2", "s5"],
+    related: ["r1", "r3"],
+  },
+  r3: {
+    id: "r3",
+    title: "License Compliance: Annual Review",
+    author: "Priya Sharma",
+    date: "2026-01-10",
+    type: "Compliance",
+    linkedServices: ["s1", "s4"],
+    related: ["r2"],
+  },
+};
+
 export const deviceList = Object.values(devices);
 export const serviceList = Object.values(services);
 export const companyList = Object.values(companies);
 export const userList = Object.values(users);
+export const reportList = Object.values(reports);

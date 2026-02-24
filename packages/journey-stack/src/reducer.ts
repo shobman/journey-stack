@@ -168,8 +168,7 @@ export function journeyReducer(
 
       // Close current chapter, activate the one before it (or after if it was first)
       const remaining = state.chapters.filter((c) => c.id !== active.id);
-      const newActiveIndex = Math.min(activeIndex, remaining.length - 1);
-      const newActive = remaining[Math.max(0, newActiveIndex - 1)] ?? remaining[0];
+      const newActive = remaining[Math.max(0, activeIndex - 1)] ?? remaining[0];
 
       return {
         ...state,
@@ -243,9 +242,9 @@ export function journeyReducer(
       // If closing the active chapter, activate the previous (or next)
       let newActiveId = state.activeChapterId;
       if (state.activeChapterId === action.chapterId) {
-        const newIdx = Math.min(closingIndex, remainingChapters.length - 1);
         const target =
-          remainingChapters[Math.max(0, newIdx - 1)] ?? remainingChapters[0];
+          remainingChapters[Math.max(0, closingIndex - 1)] ??
+          remainingChapters[0];
         newActiveId = target!.id;
       }
 
