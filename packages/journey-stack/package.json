@@ -52,5 +52,12 @@
     "chapters",
     "headless"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": "Simon Hobman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shobman/journey-stack.git",
+    "directory": "packages/journey-stack"
+  },
+  "homepage": "https://shobman.github.io/journey-stack/"
 }
