@@ -1,5 +1,9 @@
 # Journey Stack
 
+[![npm version](https://img.shields.io/npm/v/journey-stack)](https://www.npmjs.com/package/journey-stack)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/journey-stack)](https://bundlephobia.com/package/journey-stack)
+[![license](https://img.shields.io/npm/l/journey-stack)](https://github.com/shobman/journey-stack/blob/main/packages/journey-stack/package.json)
+
 **Headless workspace navigation for React. Track user journeys, not route hierarchies.**
 
 ### **[Live Demo: IT Asset Register](https://shobman.github.io/journey-stack/)**
