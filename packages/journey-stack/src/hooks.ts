@@ -51,12 +51,12 @@ export type JourneyNavigateFns = {
   openFresh: (path: string, label: string) => void;
   openOrFocus: (path: string, label: string) => void;
   goBack: () => void;
-  goToStep: (chapterId: string, stepIndex: number) => void;
   closeChapter: (chapterId: string) => void;
+  focusChapter: (chapterId: string) => void;
 };
 
 /**
- * Returns navigation functions: navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter.
+ * Returns navigation functions: navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter.
  */
 export function useJourneyNavigate(): JourneyNavigateFns {
   const { dispatch } = useJourneyContext();
@@ -87,21 +87,21 @@ export function useJourneyNavigate(): JourneyNavigateFns {
 
   const goBack = useCallback(() => dispatch({ type: "GO_BACK" }), [dispatch]);
 
-  const goToStep = useCallback(
-    (chapterId: string, stepIndex: number) =>
-      dispatch({ type: "GO_TO_STEP", chapterId, stepIndex }),
-    [dispatch],
-  );
-
   const closeChapter = useCallback(
     (chapterId: string) =>
       dispatch({ type: "CLOSE_CHAPTER", chapterId }),
     [dispatch],
   );
 
+  const focusChapter = useCallback(
+    (chapterId: string) =>
+      dispatch({ type: "FOCUS_CHAPTER", chapterId }),
+    [dispatch],
+  );
+
   return useMemo(
-    () => ({ navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter }),
-    [navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter],
+    () => ({ navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter }),
+    [navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter],
   );
 }
 
@@ -139,6 +139,7 @@ export function useJourneyBlock(blocker: JourneyBlockerFn): void {
 type HistoryStateData = {
   _journeySync: true;
   position: number;
+  chapterId: string;
   path: string;
   label: string;
 };
@@ -156,10 +157,11 @@ function getActiveTopStep(state: JourneyWorkspace): JourneyStep | undefined {
  * Syncs journey state with the browser History API so that the
  * browser back/forward buttons mirror journey navigation.
  *
- * - Forward navigation pushes a history entry via `pushState`
- * - Backward navigation (goBack, goToStep, closeChapter) calls `history.go(-N)`
- * - Browser back dispatches `GO_BACK`
- * - Browser forward dispatches `NAVIGATE` to the stored path
+ * Each history entry stores the active chapter's ID. On popstate:
+ * - If the entry's chapter differs from the current → focus that chapter
+ * - If same chapter, going back → GO_BACK (pop step)
+ * - If same chapter, going forward → NAVIGATE (recreate step)
+ * - If the chapter no longer exists → skip (keep going in same direction)
  *
  * Call once inside the `<JourneyProvider>` tree:
  *
@@ -176,19 +178,37 @@ export function useJourneyBrowserSync(): void {
   const positionRef = useRef(0);
   const depthRef = useRef(computeDepth(state));
   const stepIdRef = useRef(getActiveTopStep(state)?.id ?? "");
+  const chapterIdRef = useRef(state.activeChapterId);
 
   // Suppress flags to break feedback loops
   const suppressPushRef = useRef(false); // prevents state→browser sync
   const suppressPopRef = useRef(false); // prevents browser→journey sync
 
+  // Keep a live ref to state for the popstate handler
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  function makeEntry(overrides?: Partial<HistoryStateData>): HistoryStateData {
+    const topStep = getActiveTopStep(state);
+    return {
+      _journeySync: true,
+      position: positionRef.current,
+      chapterId: state.activeChapterId,
+      path: topStep?.path ?? "/",
+      label: topStep?.label ?? "Home",
+      ...overrides,
+    };
+  }
+
   // Initialize history state on mount
   useEffect(() => {
-    const step = getActiveTopStep(state);
+    const topStep = getActiveTopStep(state);
     const data: HistoryStateData = {
       _journeySync: true,
       position: 0,
-      path: step?.path ?? "/",
-      label: step?.label ?? "Home",
+      chapterId: state.activeChapterId,
+      path: topStep?.path ?? "/",
+      label: topStep?.label ?? "Home",
     };
     history.replaceState(data, "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,19 +227,35 @@ export function useJourneyBrowserSync(): void {
 
       const incoming = data.position;
       const current = positionRef.current;
+      const goingBack = incoming < current;
 
-      if (incoming < current) {
-        // Browser back
-        const delta = current - incoming;
-        suppressPushRef.current = true;
-        positionRef.current = incoming;
-        for (let i = 0; i < delta; i++) {
-          dispatch({ type: "GO_BACK" });
+      positionRef.current = incoming;
+
+      // Check if the chapter still exists
+      const chapterExists = stateRef.current.chapters.some(
+        (c) => c.id === data.chapterId,
+      );
+
+      if (!chapterExists) {
+        // Chapter was closed — skip this entry
+        if (goingBack) {
+          history.back();
+        } else {
+          history.forward();
         }
-      } else if (incoming > current) {
-        // Browser forward
-        suppressPushRef.current = true;
-        positionRef.current = incoming;
+        return;
+      }
+
+      suppressPushRef.current = true;
+
+      if (data.chapterId !== stateRef.current.activeChapterId) {
+        // Different chapter — focus it
+        dispatch({ type: "FOCUS_CHAPTER", chapterId: data.chapterId });
+      } else if (goingBack) {
+        // Same chapter, going back — pop step
+        dispatch({ type: "GO_BACK" });
+      } else {
+        // Same chapter, going forward — recreate step
         dispatch({ type: "NAVIGATE", path: data.path, label: data.label });
       }
     };
@@ -232,46 +268,41 @@ export function useJourneyBrowserSync(): void {
   useEffect(() => {
     const newDepth = computeDepth(state);
     const newStepId = getActiveTopStep(state)?.id ?? "";
+    const newChapterId = state.activeChapterId;
 
     if (suppressPushRef.current) {
       suppressPushRef.current = false;
       depthRef.current = newDepth;
       stepIdRef.current = newStepId;
+      chapterIdRef.current = newChapterId;
       return;
     }
 
     const oldDepth = depthRef.current;
     const oldStepId = stepIdRef.current;
-    const topStep = getActiveTopStep(state);
+    const oldChapterId = chapterIdRef.current;
 
     if (newDepth > oldDepth) {
-      // Forward: push a history entry
+      // Forward: new step or new chapter — push
       positionRef.current++;
-      const data: HistoryStateData = {
-        _journeySync: true,
-        position: positionRef.current,
-        path: topStep?.path ?? "/",
-        label: topStep?.label ?? "Home",
-      };
-      history.pushState(data, "");
+      history.pushState(makeEntry({ position: positionRef.current }), "");
     } else if (newDepth < oldDepth) {
-      // Backward: sync browser history back
+      // Backward: step popped or chapter closed — sync browser back
       const delta = oldDepth - newDepth;
       suppressPopRef.current = true;
       positionRef.current -= delta;
       history.go(-delta);
+    } else if (newChapterId !== oldChapterId) {
+      // Same depth, different chapter — chapter focus/switch — push
+      positionRef.current++;
+      history.pushState(makeEntry({ position: positionRef.current }), "");
     } else if (newStepId !== oldStepId) {
-      // Same depth, different step (replace or chapter switch)
-      const data: HistoryStateData = {
-        _journeySync: true,
-        position: positionRef.current,
-        path: topStep?.path ?? "/",
-        label: topStep?.label ?? "Home",
-      };
-      history.replaceState(data, "");
+      // Same depth, same chapter, different step — replace in place
+      history.replaceState(makeEntry(), "");
     }
 
     depthRef.current = newDepth;
     stepIdRef.current = newStepId;
+    chapterIdRef.current = newChapterId;
   }, [state]);
 }

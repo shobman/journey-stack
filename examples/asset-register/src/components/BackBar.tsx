@@ -3,7 +3,7 @@ import { useJourney, useActiveChapter, useJourneyNavigate } from "journey-stack"
 export function BackBar() {
   const chapter = useActiveChapter();
   const { chapters } = useJourney();
-  const { goBack, goToStep } = useJourneyNavigate();
+  const { goBack } = useJourneyNavigate();
 
   if (!chapter) return null;
 
@@ -79,45 +79,18 @@ export function BackBar() {
                   ›
                 </span>
               )}
-              {isLast ? (
-                <span
-                  style={{
-                    color: "#334155",
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontSize: "12px",
-                  }}
-                >
-                  {step.label}
-                </span>
-              ) : (
-                <button
-                  onClick={() => goToStep(chapter.id, i)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    padding: "1px 3px",
-                    borderRadius: "3px",
-                    fontSize: "11px",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "#3b82f6";
-                    e.currentTarget.style.background = "#eff6ff";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "#94a3b8";
-                    e.currentTarget.style.background = "none";
-                  }}
-                >
-                  {step.label}
-                </button>
-              )}
+              <span
+                style={{
+                  color: isLast ? "#334155" : "#94a3b8",
+                  fontWeight: isLast ? 500 : 400,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  fontSize: isLast ? "12px" : "11px",
+                }}
+              >
+                {step.label}
+              </span>
             </span>
           );
         })}

@@ -5,7 +5,7 @@ import { DOMAIN_COLORS } from "./shared";
 
 export function ChapterTabBar() {
   const { chapters, activeChapterId } = useJourney();
-  const { openOrFocus, closeChapter } = useJourneyNavigate();
+  const { openOrFocus, closeChapter, focusChapter } = useJourneyNavigate();
   const tabContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,8 +49,7 @@ export function ChapterTabBar() {
               isActive={isActive}
               domainColor={domainColor}
               onFocus={() => {
-                const topStep = chapter.steps[chapter.steps.length - 1];
-                openOrFocus(topStep.path, chapter.title);
+                focusChapter(chapter.id);
               }}
               onClose={(e) => {
                 e.stopPropagation();
@@ -104,7 +103,6 @@ function ChapterTab({
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { goToStep } = useJourneyNavigate();
 
   useEffect(() => {
     if (!showDropdown) return;
@@ -258,37 +256,21 @@ function ChapterTab({
           {chapter.steps.map((step, i) => {
             const isCurrent = i === chapter.steps.length - 1;
             return (
-              <button
+              <div
                 key={step.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToStep(chapter.id, i);
-                  setShowDropdown(false);
-                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   width: "100%",
                   padding: "7px 10px",
-                  border: "none",
                   borderRadius: "6px",
                   background: isCurrent ? domainColor + "10" : "transparent",
                   color: isCurrent ? domainColor : "#334155",
-                  cursor: "pointer",
                   fontSize: "12px",
                   fontFamily: "inherit",
                   textAlign: "left",
                   fontWeight: isCurrent ? 600 : 400,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isCurrent)
-                    e.currentTarget.style.background = "#f8fafc";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = isCurrent
-                    ? domainColor + "10"
-                    : "transparent";
                 }}
               >
                 <span
@@ -311,7 +293,7 @@ function ChapterTab({
                 >
                   {step.label}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>

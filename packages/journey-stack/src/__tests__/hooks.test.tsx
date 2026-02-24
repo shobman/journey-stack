@@ -227,33 +227,4 @@ describe("useJourneyNavigate", () => {
     expect(result.current.chapter!.title).toBe("Home");
   });
 
-  it("goToStep truncates chapter stack", () => {
-    const { result } = renderHook(
-      () => ({
-        nav: useJourneyNavigate(),
-        journey: useJourney(),
-        chapter: useActiveChapter(),
-        step: useCurrentStep(),
-      }),
-      { wrapper: trailWrapper },
-    );
-
-    act(() => {
-      result.current.nav.navigate("/a", "A");
-    });
-    act(() => {
-      result.current.nav.navigate("/b", "B");
-    });
-    act(() => {
-      result.current.nav.navigate("/c", "C");
-    });
-    expect(result.current.chapter!.steps).toHaveLength(4);
-
-    const chapterId = result.current.chapter!.id;
-    act(() => {
-      result.current.nav.goToStep(chapterId, 1);
-    });
-    expect(result.current.chapter!.steps).toHaveLength(2);
-    expect(result.current.step!.path).toBe("/a");
-  });
 });

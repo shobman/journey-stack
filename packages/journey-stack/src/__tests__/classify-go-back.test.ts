@@ -18,6 +18,7 @@ function makeState(
         timestamp: Date.now(),
       })),
     })),
+    focusStack: chapters.map((c) => c.id),
     activeChapterId: activeId,
   };
 }

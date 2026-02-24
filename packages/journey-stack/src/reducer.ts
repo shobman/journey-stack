@@ -38,6 +38,10 @@ function createDefaultChapter(config: JourneyConfig): JourneyChapter {
   return createChapter(path, label);
 }
 
+function activeFromFocusStack(focusStack: string[]): string {
+  return focusStack[focusStack.length - 1];
+}
+
 function getActiveChapter(state: JourneyWorkspace): JourneyChapter | undefined {
   return state.chapters.find((c) => c.id === state.activeChapterId);
 }
@@ -63,6 +67,7 @@ export function createInitialState(config: JourneyConfig): JourneyWorkspace {
   const chapter = createDefaultChapter(config);
   return {
     chapters: [chapter],
+    focusStack: [chapter.id],
     activeChapterId: chapter.id,
   };
 }
@@ -96,11 +101,13 @@ export function journeyReducer(
       if (isSignificant) {
         // Start a new chapter
         const newChapter = createChapter(action.path, action.label);
+        const newFocusStack = [...state.focusStack, newChapter.id];
 
         return {
           ...state,
           chapters: [...state.chapters, newChapter],
-          activeChapterId: newChapter.id,
+          focusStack: newFocusStack,
+          activeChapterId: activeFromFocusStack(newFocusStack),
         };
       }
 
@@ -128,11 +135,13 @@ export function journeyReducer(
     case "OPEN_FRESH": {
       // Always creates a new chapter regardless of significance
       const newChapter = createChapter(action.path, action.label);
+      const newFocusStack = [...state.focusStack, newChapter.id];
 
       return {
         ...state,
         chapters: [...state.chapters, newChapter],
-        activeChapterId: newChapter.id,
+        focusStack: newFocusStack,
+        activeChapterId: activeFromFocusStack(newFocusStack),
       };
     }
 
@@ -141,39 +150,37 @@ export function journeyReducer(
       if (!active) return state;
 
       if (active.steps.length > 1) {
-        // Pop current step
+        // Pop current step — focusStack unchanged
         return replaceChapter(state, active.id, (chapter) => ({
           ...chapter,
           steps: chapter.steps.slice(0, -1),
         }));
       }
 
-      // At chapter root — close this chapter and return to previous
-      const activeIndex = state.chapters.findIndex(
-        (c) => c.id === active.id,
-      );
-
+      // At chapter root — close this chapter, previous in focusStack becomes active
       if (state.chapters.length <= 1) {
         // Last chapter — replace with default/home chapter
         const defaultChapter = createChapter(
           config.homePath ?? "/",
           config.homeLabel ?? "Home",
         );
+        const newFocusStack = [defaultChapter.id];
         return {
           ...state,
           chapters: [defaultChapter],
-          activeChapterId: defaultChapter.id,
+          focusStack: newFocusStack,
+          activeChapterId: activeFromFocusStack(newFocusStack),
         };
       }
 
-      // Close current chapter, activate the one before it (or after if it was first)
-      const remaining = state.chapters.filter((c) => c.id !== active.id);
-      const newActive = remaining[Math.max(0, activeIndex - 1)] ?? remaining[0];
+      const remainingChapters = state.chapters.filter((c) => c.id !== active.id);
+      const newFocusStack = state.focusStack.filter((id) => id !== active.id);
 
       return {
         ...state,
-        chapters: remaining,
-        activeChapterId: newActive!.id,
+        chapters: remainingChapters,
+        focusStack: newFocusStack,
+        activeChapterId: activeFromFocusStack(newFocusStack),
       };
     }
 
@@ -184,33 +191,28 @@ export function journeyReducer(
       const existing = state.chapters.find((c) => c.domain === targetDomain);
 
       if (existing) {
-        // Switch to the existing chapter (no-op if already active)
+        // Focus existing — move to end of focusStack, chapters unchanged
         if (existing.id === state.activeChapterId) return state;
-        return { ...state, activeChapterId: existing.id };
+        const newFocusStack = [
+          ...state.focusStack.filter((id) => id !== existing.id),
+          existing.id,
+        ];
+        return {
+          ...state,
+          focusStack: newFocusStack,
+          activeChapterId: activeFromFocusStack(newFocusStack),
+        };
       }
 
-      // No matching chapter — create one (same logic as OPEN_FRESH)
+      // No matching chapter — create one
       const newChapter = createChapter(action.path, action.label);
+      const newFocusStack = [...state.focusStack, newChapter.id];
       return {
         ...state,
         chapters: [...state.chapters, newChapter],
-        activeChapterId: newChapter.id,
+        focusStack: newFocusStack,
+        activeChapterId: activeFromFocusStack(newFocusStack),
       };
-    }
-
-    case "GO_TO_STEP": {
-      const chapter = state.chapters.find((c) => c.id === action.chapterId);
-      if (!chapter) return state;
-
-      // stepIndex is the step to keep as the new top — truncate everything after
-      if (action.stepIndex < 0 || action.stepIndex >= chapter.steps.length) {
-        return state;
-      }
-
-      return replaceChapter(state, action.chapterId, (ch) => ({
-        ...ch,
-        steps: ch.steps.slice(0, action.stepIndex + 1),
-      }));
     }
 
     case "CLOSE_CHAPTER": {
@@ -225,33 +227,42 @@ export function journeyReducer(
           config.homePath ?? "/",
           config.homeLabel ?? "Home",
         );
+        const newFocusStack = [defaultChapter.id];
         return {
           ...state,
           chapters: [defaultChapter],
-          activeChapterId: defaultChapter.id,
+          focusStack: newFocusStack,
+          activeChapterId: activeFromFocusStack(newFocusStack),
         };
       }
 
-      const closingIndex = state.chapters.findIndex(
-        (c) => c.id === action.chapterId,
-      );
       const remainingChapters = state.chapters.filter(
         (c) => c.id !== action.chapterId,
       );
-
-      // If closing the active chapter, activate the previous (or next)
-      let newActiveId = state.activeChapterId;
-      if (state.activeChapterId === action.chapterId) {
-        const target =
-          remainingChapters[Math.max(0, closingIndex - 1)] ??
-          remainingChapters[0];
-        newActiveId = target!.id;
-      }
+      const newFocusStack = state.focusStack.filter(
+        (id) => id !== action.chapterId,
+      );
 
       return {
         ...state,
         chapters: remainingChapters,
-        activeChapterId: newActiveId,
+        focusStack: newFocusStack,
+        activeChapterId: activeFromFocusStack(newFocusStack),
+      };
+    }
+
+    case "FOCUS_CHAPTER": {
+      const target = state.chapters.find((c) => c.id === action.chapterId);
+      if (!target || target.id === state.activeChapterId) return state;
+      // Move to end of focusStack — chapters array unchanged
+      const newFocusStack = [
+        ...state.focusStack.filter((id) => id !== target.id),
+        target.id,
+      ];
+      return {
+        ...state,
+        focusStack: newFocusStack,
+        activeChapterId: activeFromFocusStack(newFocusStack),
       };
     }
 

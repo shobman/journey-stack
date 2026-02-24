@@ -14,6 +14,7 @@ export type JourneyChapter = {
 
 export type JourneyWorkspace = {
   chapters: JourneyChapter[];
+  focusStack: string[];
   activeChapterId: string;
 };
 
@@ -63,14 +64,13 @@ export type OpenOrFocusAction = {
   label: string;
 };
 
-export type GoToStepAction = {
-  type: "GO_TO_STEP";
-  chapterId: string;
-  stepIndex: number;
-};
-
 export type CloseChapterAction = {
   type: "CLOSE_CHAPTER";
+  chapterId: string;
+};
+
+export type FocusChapterAction = {
+  type: "FOCUS_CHAPTER";
   chapterId: string;
 };
 
@@ -80,8 +80,8 @@ export type JourneyAction =
   | OpenFreshAction
   | GoBackAction
   | OpenOrFocusAction
-  | GoToStepAction
-  | CloseChapterAction;
+  | CloseChapterAction
+  | FocusChapterAction;
 
 // --- Navigation guards ---
 

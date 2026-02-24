@@ -13,17 +13,23 @@ import {
 let pushStateSpy: ReturnType<typeof vi.spyOn>;
 let replaceStateSpy: ReturnType<typeof vi.spyOn>;
 let goSpy: ReturnType<typeof vi.spyOn>;
+let backSpy: ReturnType<typeof vi.spyOn>;
+let forwardSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   pushStateSpy = vi.spyOn(window.history, "pushState");
   replaceStateSpy = vi.spyOn(window.history, "replaceState");
   goSpy = vi.spyOn(window.history, "go");
+  backSpy = vi.spyOn(window.history, "back");
+  forwardSpy = vi.spyOn(window.history, "forward");
 });
 
 afterEach(() => {
   pushStateSpy.mockRestore();
   replaceStateSpy.mockRestore();
   goSpy.mockRestore();
+  backSpy.mockRestore();
+  forwardSpy.mockRestore();
 });
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -45,11 +51,11 @@ function firePopState(state: unknown) {
 
 describe("useJourneyBrowserSync", () => {
   describe("initialization", () => {
-    it("replaceState on mount with position 0", () => {
-      renderHook(
+    it("replaceState on mount with position 0 and chapterId", () => {
+      const { result } = renderHook(
         () => {
           useJourneyBrowserSync();
-          return useCurrentStep();
+          return { step: useCurrentStep(), journey: useJourney() };
         },
         { wrapper },
       );
@@ -58,6 +64,7 @@ describe("useJourneyBrowserSync", () => {
         expect.objectContaining({
           _journeySync: true,
           position: 0,
+          chapterId: result.current.journey.activeChapterId,
           path: "/",
           label: "Home",
         }),
@@ -67,10 +74,11 @@ describe("useJourneyBrowserSync", () => {
   });
 
   describe("app-initiated forward navigation", () => {
-    it("pushState when navigate adds a step", () => {
+    it("pushState with chapterId when navigate adds a step", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
+          journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
         { wrapper },
@@ -87,6 +95,7 @@ describe("useJourneyBrowserSync", () => {
         expect.objectContaining({
           _journeySync: true,
           position: 1,
+          chapterId: result.current.journey.activeChapterId,
           path: "/page1",
           label: "Page 1",
         }),
@@ -160,28 +169,6 @@ describe("useJourneyBrowserSync", () => {
       expect(goSpy).toHaveBeenCalledWith(-1);
     });
 
-    it("history.go(-N) when goToStep truncates multiple steps", () => {
-      const { result } = renderHook(
-        () => ({
-          nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
-          _sync: useJourneyBrowserSync(),
-        }),
-        { wrapper },
-      );
-
-      act(() => result.current.nav.navigate("/a", "A"));
-      act(() => result.current.nav.navigate("/b", "B"));
-      act(() => result.current.nav.navigate("/c", "C"));
-      goSpy.mockClear();
-
-      const chapterId = result.current.chapter!.id;
-      act(() => {
-        result.current.nav.goToStep(chapterId, 0);
-      });
-
-      expect(goSpy).toHaveBeenCalledWith(-3);
-    });
   });
 
   describe("replace triggers replaceState", () => {
@@ -210,132 +197,8 @@ describe("useJourneyBrowserSync", () => {
     });
   });
 
-  describe("browser back button (popstate)", () => {
-    it("dispatches GO_BACK when browser goes back", () => {
-      const { result } = renderHook(
-        () => ({
-          nav: useJourneyNavigate(),
-          step: useCurrentStep(),
-          chapter: useActiveChapter(),
-          _sync: useJourneyBrowserSync(),
-        }),
-        { wrapper },
-      );
-
-      act(() => result.current.nav.navigate("/a", "A"));
-      act(() => result.current.nav.navigate("/b", "B"));
-      expect(result.current.chapter!.steps).toHaveLength(3);
-
-      act(() => {
-        firePopState({
-          _journeySync: true,
-          position: 1,
-          path: "/a",
-          label: "A",
-        });
-      });
-
-      expect(result.current.step!.path).toBe("/a");
-      expect(result.current.chapter!.steps).toHaveLength(2);
-    });
-
-    it("does not pushState when processing popstate back", () => {
-      const { result } = renderHook(
-        () => ({
-          nav: useJourneyNavigate(),
-          _sync: useJourneyBrowserSync(),
-        }),
-        { wrapper },
-      );
-
-      act(() => result.current.nav.navigate("/a", "A"));
-      pushStateSpy.mockClear();
-
-      act(() => {
-        firePopState({
-          _journeySync: true,
-          position: 0,
-          path: "/",
-          label: "Home",
-        });
-      });
-
-      expect(pushStateSpy).not.toHaveBeenCalled();
-    });
-
-    it("dispatches multiple GO_BACK for multi-step browser back", () => {
-      const { result } = renderHook(
-        () => ({
-          nav: useJourneyNavigate(),
-          step: useCurrentStep(),
-          chapter: useActiveChapter(),
-          _sync: useJourneyBrowserSync(),
-        }),
-        { wrapper },
-      );
-
-      act(() => result.current.nav.navigate("/a", "A"));
-      act(() => result.current.nav.navigate("/b", "B"));
-      act(() => result.current.nav.navigate("/c", "C"));
-      expect(result.current.chapter!.steps).toHaveLength(4);
-
-      // Jump back 3 positions at once
-      act(() => {
-        firePopState({
-          _journeySync: true,
-          position: 0,
-          path: "/",
-          label: "Home",
-        });
-      });
-
-      expect(result.current.step!.path).toBe("/");
-      expect(result.current.chapter!.steps).toHaveLength(1);
-    });
-  });
-
-  describe("browser forward button (popstate)", () => {
-    it("dispatches NAVIGATE when browser goes forward", () => {
-      const { result } = renderHook(
-        () => ({
-          nav: useJourneyNavigate(),
-          step: useCurrentStep(),
-          _sync: useJourneyBrowserSync(),
-        }),
-        { wrapper },
-      );
-
-      act(() => result.current.nav.navigate("/a", "A"));
-
-      // Simulate browser back
-      act(() => {
-        firePopState({
-          _journeySync: true,
-          position: 0,
-          path: "/",
-          label: "Home",
-        });
-      });
-      expect(result.current.step!.path).toBe("/");
-
-      // Simulate browser forward
-      pushStateSpy.mockClear();
-      act(() => {
-        firePopState({
-          _journeySync: true,
-          position: 1,
-          path: "/a",
-          label: "A",
-        });
-      });
-
-      expect(result.current.step!.path).toBe("/a");
-      expect(pushStateSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("OPEN_OR_FOCUS (focus existing chapter)", () => {
-    it("replaceState when focusing existing chapter", () => {
+  describe("chapter focus pushes history", () => {
+    it("pushState when focusChapter switches active chapter", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
@@ -348,19 +211,276 @@ describe("useJourneyBrowserSync", () => {
       act(() => result.current.nav.openOrFocus("/products", "Products"));
       act(() => result.current.nav.openOrFocus("/settings", "Settings"));
 
-      replaceStateSpy.mockClear();
+      const settingsId = result.current.journey.activeChapterId;
+      const productsChapter = result.current.journey.chapters.find(
+        (c) => c.domain === "products",
+      )!;
+
       pushStateSpy.mockClear();
 
       act(() => {
-        result.current.nav.openOrFocus("/products", "Products");
+        result.current.nav.focusChapter(productsChapter.id);
       });
 
-      expect(result.current.journey.chapters).toHaveLength(3);
-      expect(pushStateSpy).not.toHaveBeenCalled();
-      expect(replaceStateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ path: "/products" }),
+      expect(pushStateSpy).toHaveBeenCalledTimes(1);
+      expect(pushStateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chapterId: productsChapter.id,
+          position: 3,
+        }),
         "",
       );
+      expect(result.current.journey.activeChapterId).toBe(productsChapter.id);
+    });
+  });
+
+  describe("browser back with chapter-aware popstate", () => {
+    it("GO_BACK when same chapter going back", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          step: useCurrentStep(),
+          chapter: useActiveChapter(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper },
+      );
+
+      const chapterId = result.current.journey.activeChapterId;
+      act(() => result.current.nav.navigate("/a", "A"));
+      act(() => result.current.nav.navigate("/b", "B"));
+      expect(result.current.chapter!.steps).toHaveLength(3);
+
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 1,
+          chapterId,
+          path: "/a",
+          label: "A",
+        });
+      });
+
+      expect(result.current.step!.path).toBe("/a");
+      expect(result.current.chapter!.steps).toHaveLength(2);
+    });
+
+    it("FOCUS_CHAPTER when different chapter going back", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper: chaptersWrapper },
+      );
+
+      act(() => result.current.nav.openOrFocus("/products", "Products"));
+      const productsId = result.current.journey.activeChapterId;
+
+      act(() => result.current.nav.openOrFocus("/settings", "Settings"));
+      // position=2, active=settings
+
+      // Simulate browser back to products entry
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 1,
+          chapterId: productsId,
+          path: "/products",
+          label: "Products",
+        });
+      });
+
+      // Should focus products, not GO_BACK
+      expect(result.current.journey.activeChapterId).toBe(productsId);
+      expect(result.current.journey.chapters).toHaveLength(3); // all chapters intact
+    });
+
+    it("does not pushState when processing popstate back", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper },
+      );
+
+      const chapterId = result.current.journey.activeChapterId;
+      act(() => result.current.nav.navigate("/a", "A"));
+      pushStateSpy.mockClear();
+
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 0,
+          chapterId,
+          path: "/",
+          label: "Home",
+        });
+      });
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("browser forward with chapter-aware popstate", () => {
+    it("NAVIGATE when same chapter going forward", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          step: useCurrentStep(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper },
+      );
+
+      const chapterId = result.current.journey.activeChapterId;
+      act(() => result.current.nav.navigate("/a", "A"));
+
+      // Browser back
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 0,
+          chapterId,
+          path: "/",
+          label: "Home",
+        });
+      });
+      expect(result.current.step!.path).toBe("/");
+
+      // Browser forward — same chapter, should NAVIGATE
+      pushStateSpy.mockClear();
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 1,
+          chapterId,
+          path: "/a",
+          label: "A",
+        });
+      });
+
+      expect(result.current.step!.path).toBe("/a");
+      expect(pushStateSpy).not.toHaveBeenCalled();
+    });
+
+    it("FOCUS_CHAPTER when different chapter going forward", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper: chaptersWrapper },
+      );
+
+      const homeId = result.current.journey.activeChapterId;
+      act(() => result.current.nav.openOrFocus("/products", "Products"));
+      const productsId = result.current.journey.activeChapterId;
+
+      // Browser back to home
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 0,
+          chapterId: homeId,
+          path: "/",
+          label: "Home",
+        });
+      });
+      expect(result.current.journey.activeChapterId).toBe(homeId);
+
+      // Browser forward to products — different chapter
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 1,
+          chapterId: productsId,
+          path: "/products",
+          label: "Products",
+        });
+      });
+
+      expect(result.current.journey.activeChapterId).toBe(productsId);
+      expect(result.current.journey.chapters).toHaveLength(2); // both intact
+    });
+  });
+
+  describe("skips closed chapters", () => {
+    it("calls history.back when popstate references a closed chapter", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper: chaptersWrapper },
+      );
+
+      act(() => result.current.nav.openOrFocus("/products", "Products"));
+      const productsId = result.current.journey.activeChapterId;
+
+      act(() => result.current.nav.openOrFocus("/settings", "Settings"));
+      // Close products chapter (triggers history.go(-1), sets suppressPop)
+      act(() => result.current.nav.closeChapter(productsId));
+      // jsdom doesn't fire popstate from history.go(), so clear the flag
+      act(() => firePopState(null));
+
+      backSpy.mockClear();
+
+      // Simulate popstate landing on the closed products entry
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 0,
+          chapterId: productsId,
+          path: "/products",
+          label: "Products",
+        });
+      });
+
+      // Should skip — call history.back() to keep going
+      expect(backSpy).toHaveBeenCalled();
+    });
+
+    it("calls history.forward when forward popstate references a closed chapter", () => {
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _sync: useJourneyBrowserSync(),
+        }),
+        { wrapper: chaptersWrapper },
+      );
+
+      act(() => result.current.nav.openOrFocus("/products", "Products"));
+      const productsId = result.current.journey.activeChapterId;
+
+      act(() => result.current.nav.openOrFocus("/settings", "Settings"));
+      // Close products (triggers history.go(-1), sets suppressPop)
+      act(() => result.current.nav.closeChapter(productsId));
+      // Clear suppressPop (jsdom doesn't fire popstate from go())
+      act(() => firePopState(null));
+
+      forwardSpy.mockClear();
+
+      // Simulate forward popstate landing on closed products entry
+      act(() => {
+        firePopState({
+          _journeySync: true,
+          position: 2,
+          chapterId: productsId,
+          path: "/products",
+          label: "Products",
+        });
+      });
+
+      expect(forwardSpy).toHaveBeenCalled();
     });
   });
 

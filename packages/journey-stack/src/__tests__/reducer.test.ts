@@ -404,48 +404,6 @@ describe("reducer", () => {
     });
   });
 
-  describe("GO_TO_STEP", () => {
-    const config: JourneyConfig = { mode: "trail" };
-
-    it("truncates steps to the given index", () => {
-      let state = createInitialState(config);
-      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
-      state = journeyReducer(state, { type: "NAVIGATE", path: "/b", label: "B" }, config);
-      state = journeyReducer(state, { type: "NAVIGATE", path: "/c", label: "C" }, config);
-
-      const chapterId = getActive(state).id;
-      // Go back to step index 1 (which is "/a")
-      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 1 }, config);
-
-      expect(getActive(state).steps).toHaveLength(2);
-      expect(currentStep(state).path).toBe("/a");
-    });
-
-    it("is a no-op for out-of-bounds index", () => {
-      let state = createInitialState(config);
-      const chapterId = getActive(state).id;
-
-      const before = state;
-      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 5 }, config);
-      expect(state).toBe(before);
-
-      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: -1 }, config);
-      expect(state).toBe(before);
-    });
-
-    it("keeps all steps when going to the last step", () => {
-      let state = createInitialState(config);
-      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
-
-      const chapterId = getActive(state).id;
-      const before = state;
-      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 1 }, config);
-
-      // Step index 1 is the last step, so no truncation
-      expect(getActive(state).steps).toHaveLength(2);
-    });
-  });
-
   describe("CLOSE_CHAPTER", () => {
     const config: JourneyConfig = { mode: "trail" };
 

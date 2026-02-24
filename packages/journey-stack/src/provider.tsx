@@ -74,20 +74,6 @@ export function JourneyProvider({
         }
       }
 
-      if (action.type === "GO_TO_STEP" && blockers.size > 0) {
-        const active = stateRef.current.chapters.find(
-          (c) => c.id === stateRef.current.activeChapterId,
-        );
-        if (active && action.chapterId === active.id) {
-          const blockerAction: BlockerAction = {
-            type: "back",
-            chapterId: active.id,
-          };
-          const allAllowed = [...blockers].every((fn) => fn(blockerAction));
-          if (!allAllowed) return;
-        }
-      }
-
       if (action.type === "CLOSE_CHAPTER" && blockers.size > 0) {
         const isLast = stateRef.current.chapters.length <= 1;
         const blockerAction: BlockerAction = {
