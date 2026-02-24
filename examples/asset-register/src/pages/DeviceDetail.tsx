@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { devices, users, companies, serviceList } from "../data";
 import {
   PageHeader,
@@ -7,8 +8,9 @@ import {
   CrossNavHint,
 } from "../components/shared";
 
-export function DeviceDetail({ id }: { id: string }) {
-  const device = devices[id];
+export function DeviceDetail() {
+  const { id } = useParams<{ id: string }>();
+  const device = devices[id!];
   if (!device)
     return (
       <p style={{ color: "#94a3b8", padding: "40px", textAlign: "center" }}>

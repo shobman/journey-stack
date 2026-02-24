@@ -1,4 +1,5 @@
-import { useCurrentStep, useJourneyNavigate } from "journey-stack";
+import { useCurrentStep } from "journey-stack";
+import { useAppNavigate } from "../hooks/useAppNavigate";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: "⊞" },
@@ -11,7 +12,7 @@ const NAV_ITEMS = [
 export function TopNav() {
   const step = useCurrentStep();
   const currentPath = step?.path ?? "/dashboard";
-  const { openOrFocus, openFresh } = useJourneyNavigate();
+  const { openOrFocus, fresh } = useAppNavigate();
 
   return (
     <div
@@ -47,7 +48,7 @@ export function TopNav() {
               onClick={() =>
                 isDashboard
                   ? openOrFocus(item.path, item.label)
-                  : openFresh(item.path, item.label)
+                  : fresh(item.path, item.label)
               }
               style={{
                 display: "flex",

@@ -1,4 +1,7 @@
-import { JourneyProvider, useCurrentStep, useJourneyBrowserSync } from "journey-stack";
+import { createBrowserRouter, Outlet } from "react-router-dom";
+import { JourneyProvider } from "journey-stack";
+import { SyncContext } from "./hooks/SyncContext";
+import { useRouterJourneySync } from "./hooks/useRouterJourneySync";
 import { TopNav } from "./components/TopNav";
 import { ChapterTabBar } from "./components/ChapterTabBar";
 import { BackBar } from "./components/BackBar";
@@ -13,34 +16,31 @@ import { CompanyDetail } from "./pages/CompanyDetail";
 import { ReportList } from "./pages/ReportList";
 import { ReportDetail } from "./pages/ReportDetail";
 
-function PageRouter() {
-  const step = useCurrentStep();
-  const path = step?.path ?? "/dashboard";
+function RootLayout() {
+  return (
+    <JourneyProvider
+      mode="chapters"
+      domains={["dashboard", "companies"]}
+      homePath="/dashboard"
+      homeLabel="Dashboard"
+    >
+      <SyncBridge>
+        <AppShell />
+      </SyncBridge>
+    </JourneyProvider>
+  );
+}
 
-  if (path === "/dashboard" || path === "/") return <Dashboard />;
-
-  if (path === "/devices") return <DeviceList />;
-  if (path.startsWith("/devices/"))
-    return <DeviceDetail id={path.split("/")[2]} />;
-
-  if (path === "/services") return <ServiceList />;
-  if (path.startsWith("/services/"))
-    return <ServiceDetail id={path.split("/")[2]} />;
-
-  if (path === "/companies") return <CompanyList />;
-  if (path.startsWith("/companies/"))
-    return <CompanyDetail id={path.split("/")[2]} />;
-
-  if (path === "/reports") return <ReportList />;
-  if (path.startsWith("/reports/"))
-    return <ReportDetail id={path.split("/")[2]} />;
-
-  return <Dashboard />;
+function SyncBridge({ children }: { children: React.ReactNode }) {
+  const syncValue = useRouterJourneySync();
+  return (
+    <SyncContext.Provider value={syncValue}>
+      {children}
+    </SyncContext.Provider>
+  );
 }
 
 function AppShell() {
-  useJourneyBrowserSync();
-
   return (
     <div
       style={{
@@ -66,7 +66,7 @@ function AppShell() {
         >
           <BackBar />
           <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
-            <PageRouter />
+            <Outlet />
           </div>
         </div>
       </div>
@@ -74,15 +74,23 @@ function AppShell() {
   );
 }
 
-export function App() {
-  return (
-    <JourneyProvider
-      mode="chapters"
-      domains={["dashboard", "companies"]}
-      homePath="/dashboard"
-      homeLabel="Dashboard"
-    >
-      <AppShell />
-    </JourneyProvider>
-  );
-}
+export const router = createBrowserRouter(
+  [
+    {
+      element: <RootLayout />,
+      children: [
+        { index: true, element: <Dashboard /> },
+        { path: "dashboard", element: <Dashboard /> },
+        { path: "devices", element: <DeviceList /> },
+        { path: "devices/:id", element: <DeviceDetail /> },
+        { path: "services", element: <ServiceList /> },
+        { path: "services/:id", element: <ServiceDetail /> },
+        { path: "companies", element: <CompanyList /> },
+        { path: "companies/:id", element: <CompanyDetail /> },
+        { path: "reports", element: <ReportList /> },
+        { path: "reports/:id", element: <ReportDetail /> },
+      ],
+    },
+  ],
+  { basename: "/journey-stack" },
+);

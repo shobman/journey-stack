@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { companies, users, devices } from "../data";
 import {
   PageHeader,
@@ -6,8 +7,9 @@ import {
   CrossNavHint,
 } from "../components/shared";
 
-export function CompanyDetail({ id }: { id: string }) {
-  const company = companies[id];
+export function CompanyDetail() {
+  const { id } = useParams<{ id: string }>();
+  const company = companies[id!];
   if (!company)
     return (
       <p style={{ color: "#94a3b8", padding: "40px", textAlign: "center" }}>

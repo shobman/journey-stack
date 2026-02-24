@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { reports, services } from "../data";
 import {
   PageHeader,
@@ -6,8 +7,9 @@ import {
   CrossNavHint,
 } from "../components/shared";
 
-export function ReportDetail({ id }: { id: string }) {
-  const report = reports[id];
+export function ReportDetail() {
+  const { id } = useParams<{ id: string }>();
+  const report = reports[id!];
   if (!report)
     return (
       <p style={{ color: "#94a3b8", padding: "40px", textAlign: "center" }}>

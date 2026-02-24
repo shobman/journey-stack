@@ -1,9 +1,10 @@
-import { useJourney, useActiveChapter, useJourneyNavigate } from "journey-stack";
+import { useJourney, useActiveChapter } from "journey-stack";
+import { useAppNavigate } from "../hooks/useAppNavigate";
 
 export function BackBar() {
   const chapter = useActiveChapter();
   const { chapters } = useJourney();
-  const { goBack } = useJourneyNavigate();
+  const { back } = useAppNavigate();
 
   if (!chapter) return null;
 
@@ -27,7 +28,7 @@ export function BackBar() {
     >
       {(hasStepHistory || (atChapterRoot && hasPreviousChapter)) && (
         <button
-          onClick={goBack}
+          onClick={back}
           style={{
             background: "none",
             border: "1px solid #e2e8f0",

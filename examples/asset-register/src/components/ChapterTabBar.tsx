@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { useJourney, useJourneyNavigate } from "journey-stack";
+import { useJourney } from "journey-stack";
 import type { JourneyChapter } from "journey-stack";
+import { useAppNavigate } from "../hooks/useAppNavigate";
 import { DOMAIN_COLORS } from "./shared";
 
 export function ChapterTabBar() {
   const { chapters, activeChapterId } = useJourney();
-  const { openOrFocus, closeChapter, focusChapter } = useJourneyNavigate();
+  const { openOrFocus, closeChapter, focusChapter } = useAppNavigate();
   const tabContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -119,7 +120,6 @@ function ChapterTab({
   }, [showDropdown]);
 
   const stepCount = chapter.steps.length;
-  const currentStep = chapter.steps[chapter.steps.length - 1];
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }} ref={dropdownRef}>

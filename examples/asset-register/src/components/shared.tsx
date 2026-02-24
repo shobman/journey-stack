@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useJourneyNavigate, useCurrentStep } from "journey-stack";
+import { useCurrentStep } from "journey-stack";
+import { useAppNavigate } from "../hooks/useAppNavigate";
 
 export const DOMAIN_COLORS: Record<string, string> = {
   dashboard: "#64748b",
@@ -107,7 +108,7 @@ export function RelatedItem({
   sub?: string;
   significant?: boolean;
 }) {
-  const { navigate } = useJourneyNavigate();
+  const { push } = useAppNavigate();
   return (
     <div
       style={{
@@ -128,7 +129,7 @@ export function RelatedItem({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          navigate(to, label, { significant });
+          push(to, label, { significant });
         }}
         style={{
           background: "none",
@@ -258,7 +259,7 @@ export function SidebarLink({
   children?: ReactNode;
   icon?: string;
 }) {
-  const { replace } = useJourneyNavigate();
+  const { swap } = useAppNavigate();
   const step = useCurrentStep();
   const currentPath = step?.path ?? "/dashboard";
   const isActive = currentPath === to;
@@ -267,7 +268,7 @@ export function SidebarLink({
     <button
       onClick={(e) => {
         e.stopPropagation();
-        replace(to, label);
+        swap(to, label);
       }}
       style={{
         display: "flex",
