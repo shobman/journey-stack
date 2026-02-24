@@ -1,5 +1,5 @@
 {
-  "name": "investment-demo",
+  "name": "asset-register",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
   "dependencies": {
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "react-router-dom": "^6.28.0",
     "journey-stack": "workspace:*"
   },
   "devDependencies": {

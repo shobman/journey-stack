@@ -81,6 +81,55 @@ describe("useJourneyBlock", () => {
         chapterId,
       } satisfies BlockerAction);
     });
+
+    it("fires once (not per-step) when goBack(count) is called", () => {
+      const blocker = vi.fn(() => true);
+
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          chapter: useActiveChapter(),
+          _block: useJourneyBlock(blocker),
+        }),
+        { wrapper },
+      );
+
+      act(() => result.current.nav.navigate("/a", "A"));
+      act(() => result.current.nav.navigate("/b", "B"));
+      act(() => result.current.nav.navigate("/c", "C"));
+      blocker.mockClear();
+
+      act(() => result.current.nav.goBack(2));
+
+      expect(blocker).toHaveBeenCalledTimes(1);
+      expect(result.current.chapter!.steps).toHaveLength(2);
+    });
+
+    it("receives 'close' when count exceeds step count", () => {
+      const blocker = vi.fn(() => true);
+
+      const { result } = renderHook(
+        () => ({
+          nav: useJourneyNavigate(),
+          journey: useJourney(),
+          _block: useJourneyBlock(blocker),
+        }),
+        { wrapper },
+      );
+
+      act(() => result.current.nav.openFresh("/other", "Other"));
+      act(() => result.current.nav.navigate("/deep", "Deep"));
+      blocker.mockClear();
+
+      const chapterId = result.current.journey.activeChapterId;
+      act(() => result.current.nav.goBack(5));
+
+      expect(blocker).toHaveBeenCalledWith({
+        type: "close",
+        chapterId,
+      } satisfies BlockerAction);
+      expect(result.current.journey.chapters).toHaveLength(1);
+    });
   });
 
   describe("close (closing a chapter at root)", () => {

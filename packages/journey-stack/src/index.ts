@@ -11,6 +11,9 @@ export type {
   ReplaceAction,
   OpenFreshAction,
   GoBackAction,
+  OpenOrFocusAction,
+  CloseChapterAction,
+  FocusChapterAction,
   SignificanceResult,
   BlockerAction,
   JourneyBlockerFn,
@@ -27,6 +30,8 @@ export {
   useCurrentStep,
   useJourneyNavigate,
   useJourneyBlock,
+  useJourneyBrowserSync,
+  useWillBranch,
 } from "./hooks";
 export type { JourneyNavigateFns } from "./hooks";
 

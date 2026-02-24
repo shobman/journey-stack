@@ -18,6 +18,7 @@ function makeState(
         timestamp: Date.now(),
       })),
     })),
+    focusStack: chapters.map((c) => c.id),
     activeChapterId: activeId,
   };
 }
@@ -50,5 +51,31 @@ describe("classifyGoBack", () => {
   it("returns null when active chapter not found", () => {
     const state = makeState([{ id: "ch1", stepsCount: 1 }], "nonexistent");
     expect(classifyGoBack(state)).toBeNull();
+  });
+
+  describe("with count", () => {
+    it("returns 'back' when count < steps", () => {
+      const state = makeState([{ id: "ch1", stepsCount: 5 }], "ch1");
+      expect(classifyGoBack(state, 3)).toEqual({ type: "back", chapterId: "ch1" });
+    });
+
+    it("returns 'close' when count >= steps with other chapters", () => {
+      const state = makeState(
+        [
+          { id: "ch1", stepsCount: 2 },
+          { id: "ch2", stepsCount: 3 },
+        ],
+        "ch2",
+      );
+      expect(classifyGoBack(state, 3)).toEqual({ type: "close", chapterId: "ch2" });
+    });
+
+    it("returns 'closeAll' when count >= steps on last chapter", () => {
+      const state = makeState([{ id: "ch1", stepsCount: 2 }], "ch1");
+      expect(classifyGoBack(state, 2)).toEqual({
+        type: "closeAll",
+        chapterId: "ch1",
+      });
+    });
   });
 });
