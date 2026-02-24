@@ -171,4 +171,89 @@ describe("useJourneyNavigate", () => {
     });
     expect(result.current.chapter!.steps.length).toBe(len);
   });
+
+  it("openOrFocus creates chapter then focuses existing on repeat", () => {
+    const { result } = renderHook(
+      () => ({
+        nav: useJourneyNavigate(),
+        journey: useJourney(),
+        chapter: useActiveChapter(),
+      }),
+      { wrapper },
+    );
+
+    // First call creates a chapter
+    act(() => {
+      result.current.nav.openOrFocus("/products", "Products");
+    });
+    expect(result.current.journey.chapters).toHaveLength(2);
+    const productsId = result.current.journey.activeChapterId;
+
+    // Navigate away
+    act(() => {
+      result.current.nav.openOrFocus("/settings", "Settings");
+    });
+    expect(result.current.journey.chapters).toHaveLength(3);
+    expect(result.current.journey.activeChapterId).not.toBe(productsId);
+
+    // Second call focuses existing — no new chapter
+    act(() => {
+      result.current.nav.openOrFocus("/products", "Products");
+    });
+    expect(result.current.journey.chapters).toHaveLength(3);
+    expect(result.current.journey.activeChapterId).toBe(productsId);
+  });
+
+  it("closeChapter removes a chapter", () => {
+    const { result } = renderHook(
+      () => ({
+        nav: useJourneyNavigate(),
+        journey: useJourney(),
+        chapter: useActiveChapter(),
+      }),
+      { wrapper: trailWrapper },
+    );
+
+    act(() => {
+      result.current.nav.openFresh("/x", "X");
+    });
+    expect(result.current.journey.chapters).toHaveLength(2);
+    const xId = result.current.journey.activeChapterId;
+
+    act(() => {
+      result.current.nav.closeChapter(xId);
+    });
+    expect(result.current.journey.chapters).toHaveLength(1);
+    expect(result.current.chapter!.title).toBe("Home");
+  });
+
+  it("goToStep truncates chapter stack", () => {
+    const { result } = renderHook(
+      () => ({
+        nav: useJourneyNavigate(),
+        journey: useJourney(),
+        chapter: useActiveChapter(),
+        step: useCurrentStep(),
+      }),
+      { wrapper: trailWrapper },
+    );
+
+    act(() => {
+      result.current.nav.navigate("/a", "A");
+    });
+    act(() => {
+      result.current.nav.navigate("/b", "B");
+    });
+    act(() => {
+      result.current.nav.navigate("/c", "C");
+    });
+    expect(result.current.chapter!.steps).toHaveLength(4);
+
+    const chapterId = result.current.chapter!.id;
+    act(() => {
+      result.current.nav.goToStep(chapterId, 1);
+    });
+    expect(result.current.chapter!.steps).toHaveLength(2);
+    expect(result.current.step!.path).toBe("/a");
+  });
 });

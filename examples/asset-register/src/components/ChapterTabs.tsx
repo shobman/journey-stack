@@ -2,7 +2,7 @@ import { useJourney, useJourneyNavigate } from "journey-stack";
 
 export function ChapterTabs() {
   const { chapters, activeChapterId } = useJourney();
-  const { openFresh } = useJourneyNavigate();
+  const { openOrFocus, openFresh, closeChapter } = useJourneyNavigate();
 
   if (chapters.length <= 1) return null;
 
@@ -10,6 +10,7 @@ export function ChapterTabs() {
     <div className="chapter-tabs">
       {chapters.map((chapter) => {
         const isActive = chapter.id === activeChapterId;
+        const currentStep = chapter.steps[chapter.steps.length - 1];
         return (
           <div
             key={chapter.id}
@@ -19,8 +20,13 @@ export function ChapterTabs() {
               className="chapter-tab-button"
               onClick={() => {
                 if (!isActive) {
-                  const currentStep = chapter.steps[chapter.steps.length - 1];
-                  openFresh(currentStep.path, currentStep.label);
+                  // For persistent domains, use openOrFocus to find existing chapter
+                  // For assets domain (New Asset), use openFresh since they're ephemeral
+                  if (chapter.domain === "assets") {
+                    openFresh(currentStep.path, currentStep.label);
+                  } else {
+                    openOrFocus(currentStep.path, chapter.title);
+                  }
                 }
               }}
             >
@@ -29,12 +35,19 @@ export function ChapterTabs() {
                 {chapter.steps.length} step{chapter.steps.length !== 1 ? "s" : ""}
               </span>
             </button>
+            <button
+              className="chapter-tab-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                closeChapter(chapter.id);
+              }}
+              title="Close chapter"
+            >
+              &times;
+            </button>
           </div>
         );
       })}
-      <span className="chapter-tabs-hint">
-        chapters — cross-domain navigation creates tabs
-      </span>
     </div>
   );
 }

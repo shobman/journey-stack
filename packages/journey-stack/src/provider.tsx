@@ -64,16 +64,40 @@ export function JourneyProvider({
 
   const dispatch = useCallback(
     (action: JourneyAction) => {
-      if (action.type === "GO_BACK") {
-        const blockers = blockersRef.current;
-        if (blockers.size > 0) {
-          const blockerAction = classifyGoBack(stateRef.current);
-          if (blockerAction) {
-            const allAllowed = [...blockers].every((fn) => fn(blockerAction));
-            if (!allAllowed) return;
-          }
+      const blockers = blockersRef.current;
+
+      if (action.type === "GO_BACK" && blockers.size > 0) {
+        const blockerAction = classifyGoBack(stateRef.current);
+        if (blockerAction) {
+          const allAllowed = [...blockers].every((fn) => fn(blockerAction));
+          if (!allAllowed) return;
         }
       }
+
+      if (action.type === "GO_TO_STEP" && blockers.size > 0) {
+        const active = stateRef.current.chapters.find(
+          (c) => c.id === stateRef.current.activeChapterId,
+        );
+        if (active && action.chapterId === active.id) {
+          const blockerAction: BlockerAction = {
+            type: "back",
+            chapterId: active.id,
+          };
+          const allAllowed = [...blockers].every((fn) => fn(blockerAction));
+          if (!allAllowed) return;
+        }
+      }
+
+      if (action.type === "CLOSE_CHAPTER" && blockers.size > 0) {
+        const isLast = stateRef.current.chapters.length <= 1;
+        const blockerAction: BlockerAction = {
+          type: isLast ? "closeAll" : "close",
+          chapterId: action.chapterId,
+        };
+        const allAllowed = [...blockers].every((fn) => fn(blockerAction));
+        if (!allAllowed) return;
+      }
+
       rawDispatch(action);
     },
     [],

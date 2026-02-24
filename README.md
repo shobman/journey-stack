@@ -8,7 +8,7 @@ Traditional breadcrumbs show where a page sits in the route tree. Journey Stack 
 
 ## The Problem
 
-In any app with cross-linked data — investment platforms, CRMs, asset registers, knowledge bases — users constantly follow relationships across domain boundaries. A client links to a portfolio, which links to a fund, which links to a research note. Traditional breadcrumbs break because the route hierarchy doesn't match the user's actual journey.
+In any app with cross-linked data — IT asset registers, CRMs, service catalogs, knowledge bases — users constantly follow relationships across domain boundaries. A device links to its assigned user, who links to their company, which links to its service contracts. Traditional breadcrumbs break because the route hierarchy doesn't match the user's actual journey.
 
 Journey Stack solves this by tracking navigation as a **workspace of chapters**, where each chapter represents a thread of related exploration. Users can drill deep, branch into new contexts, and always get back.
 
@@ -56,11 +56,11 @@ When your app has distinct domains and users juggle multiple contexts simultaneo
 ```tsx
 <JourneyProvider
   mode="chapters"
-  domains={["clients", "funds", "research"]}
+  domains={["devices", "services", "companies"]}
 >
 ```
 
-Now cross-domain navigation (e.g. `/clients/6` → `/funds/4`) automatically creates a new chapter. Same-domain navigation extends the current chapter. Users see chapter tabs, can switch between them, close them, and back through them.
+Now cross-domain navigation (e.g. `/devices/3` → `/companies/1`) automatically creates a new chapter. Same-domain navigation extends the current chapter. Users see chapter tabs, can switch between them, close them, and back through them.
 
 ## Core Concepts
 
@@ -70,7 +70,7 @@ The full workspace state for a session. Contains one or more chapters.
 
 ### Chapter
 
-A thread of related navigation. Like a browser tab with its own history. Has a domain identity, a title, and an ordered stack of steps. Chapters are created by cross-domain navigation or explicit `openFresh()` calls.
+A thread of related navigation. Like a browser tab with its own history. Has a domain identity, a title, and an ordered stack of steps. Chapters are created by cross-domain navigation, explicit `openFresh()` calls, or `openOrFocus()` when no matching chapter exists.
 
 ### Step
 
@@ -88,7 +88,7 @@ The decision engine that determines whether a navigation extends the current cha
 
 ## Navigation Gestures
 
-Four distinct gestures cover every navigation pattern:
+Seven distinct gestures cover every navigation pattern:
 
 ### `navigate(path, label, options?)`
 
@@ -98,13 +98,13 @@ The primary navigation. Pushes a new step onto the active chapter — unless sig
 const { navigate } = useJourneyNavigate();
 
 // Let the mode decide (trail extends, chapters compares domains)
-navigate('/funds/4', 'Zenith Alpha');
+navigate('/services/2', 'AWS Infrastructure');
 
 // Force a new chapter regardless of mode
-navigate('/funds/4', 'Zenith Alpha', { significant: true });
+navigate('/services/2', 'AWS Infrastructure', { significant: true });
 
 // Force same-chapter regardless of domain
-navigate('/funds/4', 'Zenith Alpha', { significant: false });
+navigate('/services/2', 'AWS Infrastructure', { significant: false });
 ```
 
 ### `replace(path, label)`
@@ -116,19 +116,36 @@ Perfect for sidebar navigation, sibling switching, tabbed views — any lateral 
 ```tsx
 const { replace } = useJourneyNavigate();
 
-// User clicks a different fund in the sidebar
-replace('/funds/5', 'Vanguard Intl Shares');
+// User clicks a different device in the sidebar
+replace('/devices/5', 'HP ProLiant DL380');
 ```
 
 ### `openFresh(path, label)`
 
-Always creates a new chapter. Used for top-level navigation like main menus where the user is intentionally starting a new context.
+Always creates a new chapter. Used for actions that should always produce a fresh context — like "New Asset" buttons where each click should open an independent form.
 
 ```tsx
 const { openFresh } = useJourneyNavigate();
 
-// Main nav click
-openFresh('/clients', 'Clients');
+// "New Asset" button — always a new chapter
+openFresh('/assets/new', 'New Asset');
+```
+
+### `openOrFocus(path, label)`
+
+The persistent navigation gesture. If a chapter already exists whose domain matches the target path's domain, switches to that chapter. If no matching chapter exists, creates a new one.
+
+This is the gesture for main navigation — clicking "Devices" should always take you to the Devices chapter, not spawn a duplicate.
+
+```tsx
+const { openOrFocus } = useJourneyNavigate();
+
+// Main nav — reuse existing chapter or create one
+openOrFocus('/devices', 'Devices');
+openOrFocus('/services', 'Services');
+
+// Clicking "Devices" again switches back — no duplicate
+openOrFocus('/devices', 'Devices');
 ```
 
 ### `goBack()`
@@ -144,25 +161,52 @@ const { goBack } = useJourneyNavigate();
 goBack();
 ```
 
+### `goToStep(chapterId, stepIndex)`
+
+Truncates a chapter's stack to a specific step. Everything after that step is removed. Useful for breadcrumb close buttons — clicking × on a breadcrumb step pops back to that point.
+
+Respects navigation guards.
+
+```tsx
+const { goToStep } = useJourneyNavigate();
+const chapter = useActiveChapter();
+
+// Breadcrumb × button — pop back to step index 2
+goToStep(chapter.id, 2);
+```
+
+### `closeChapter(chapterId)`
+
+Explicitly closes a chapter by ID. If closing the active chapter, activates the previous one. If closing the last chapter, resets to the home chapter.
+
+Respects navigation guards.
+
+```tsx
+const { closeChapter } = useJourneyNavigate();
+
+// Chapter tab × button
+closeChapter(chapter.id);
+```
+
 ## Significance in Practice
 
 The three-layer significance model means the same destination can behave differently depending on context:
 
 ```tsx
-// A fund link on a research page — different domain, auto-creates a new chapter
-<button onClick={() => navigate('/funds/4', 'Zenith Alpha')}>
-  Investigate this fund →
+// A company link on a device page — different domain, auto-creates a new chapter
+<button onClick={() => navigate('/companies/1', 'Dell Technologies')}>
+  View vendor →
 </button>
 
-// The same fund link on a client portfolio page — forced to stay in chapter
-// because in this context, the fund is part of the client's story
-<button onClick={() => navigate('/funds/4', 'Zenith Alpha', { significant: false })}>
-  View holding
+// The same company link on a user page — forced to stay in chapter
+// because in this context, the company is part of the user's story
+<button onClick={() => navigate('/companies/1', 'Dell Technologies', { significant: false })}>
+  View employer
 </button>
 
-// The same fund reached from the main menu — always fresh chapter
-<button onClick={() => openFresh('/funds/4', 'Zenith Alpha')}>
-  Funds
+// The same company reached from the main menu — persistent chapter
+<button onClick={() => openOrFocus('/companies', 'Companies')}>
+  Companies
 </button>
 ```
 
@@ -214,12 +258,12 @@ const step = useCurrentStep();
 Returns navigation functions.
 
 ```ts
-const { navigate, replace, openFresh, goBack } = useJourneyNavigate();
+const { navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter } = useJourneyNavigate();
 ```
 
 #### `useJourneyBlock(blocker)`
 
-Registers a navigation guard that intercepts destructive actions (`goBack`, close chapter). Non-destructive actions (navigate, replace, openFresh) pass through unguarded.
+Registers a navigation guard that intercepts destructive actions (`goBack`, `goToStep`, `closeChapter`). Non-destructive actions (navigate, replace, openFresh, openOrFocus) pass through unguarded.
 
 ```ts
 useJourneyBlock((action) => {
@@ -242,18 +286,18 @@ A component for declarative journey navigation. Renders its children as a clicka
 import { JourneyLink } from 'journey-stack';
 
 // Let the mode decide significance
-<JourneyLink to="/funds/4" label="Zenith Alpha">
-  View Fund
+<JourneyLink to="/devices/3" label="MacBook Pro 16″">
+  View Device
 </JourneyLink>
 
 // Force new chapter
-<JourneyLink to="/funds/4" label="Zenith Alpha" significant>
-  Investigate Fund →
+<JourneyLink to="/devices/3" label="MacBook Pro 16″" significant>
+  Investigate Device →
 </JourneyLink>
 
 // Force same chapter
-<JourneyLink to="/funds/4" label="Zenith Alpha" significant={false}>
-  Related fund
+<JourneyLink to="/devices/3" label="MacBook Pro 16″" significant={false}>
+  Related device
 </JourneyLink>
 ```
 
@@ -295,13 +339,13 @@ The simplest mode. Every navigation pushes onto a single linear trail. No chapte
 Navigation creates chapters when crossing domain boundaries. Domains are defined as top-level path segments. Users can work across multiple chapters simultaneously, each with its own history.
 
 ```tsx
-<JourneyProvider mode="chapters" domains={["clients", "funds", "research"]}>
+<JourneyProvider mode="chapters" domains={["devices", "services", "companies"]}>
 ```
 
-A domain list of `["clients", "funds", "research"]` means:
-- `/clients/6` → `/clients/9` = same domain, extends chapter
-- `/clients/6` → `/funds/4` = cross-domain, new chapter
-- `/funds/4` → `/funds/7` = same domain, extends chapter
+A domain list of `["devices", "services", "companies"]` means:
+- `/devices/1` → `/devices/3` = same domain, extends chapter
+- `/devices/1` → `/companies/2` = cross-domain, new chapter
+- `/services/3` → `/services/5` = same domain, extends chapter
 
 The stack never drops chapters or steps. How many chapter tabs or breadcrumb items you show in the UI is a presentation concern — the library stores the full history and leaves display truncation to you.
 
@@ -311,14 +355,14 @@ Planned mode that reads the React Router v6 route tree directly. If the target p
 
 ## Patterns
 
-### Breadcrumb with Overflow
+### Breadcrumb with Overflow and Step Close
 
-The stack grows without limit. Truncate in the UI:
+The stack grows without limit. Truncate in the UI. Each breadcrumb step can have a × button that pops back to that point using `goToStep`:
 
 ```tsx
 function Breadcrumbs() {
   const chapter = useActiveChapter();
-  const { goBack } = useJourneyNavigate();
+  const { goBack, goToStep } = useJourneyNavigate();
   if (!chapter) return null;
 
   const steps = chapter.steps;
@@ -330,29 +374,35 @@ function Breadcrumbs() {
     <nav>
       <button onClick={goBack}>←</button>
       {hasOverflow && <span>…</span>}
-      {visible.map((step) => (
-        <span key={step.id}>{step.label}</span>
+      {visible.map((step, i) => (
+        <span key={step.id}>
+          {step.label}
+          {i < visible.length - 1 && (
+            <button onClick={() => goToStep(chapter.id, steps.indexOf(step))}>×</button>
+          )}
+        </span>
       ))}
     </nav>
   );
 }
 ```
 
-### Chapter Tabs
+### Chapter Tabs with Close
 
-Render workspace tabs from the journey state:
+Render workspace tabs from the journey state, with × buttons to close chapters:
 
 ```tsx
 function ChapterTabs() {
   const { chapters, activeChapterId } = useJourney();
+  const { openOrFocus, closeChapter } = useJourneyNavigate();
 
   return chapters.map(chapter => (
-    <button
-      key={chapter.id}
-      data-active={chapter.id === activeChapterId}
-    >
-      {chapter.title} ({chapter.steps.length})
-    </button>
+    <div key={chapter.id} data-active={chapter.id === activeChapterId}>
+      <button onClick={() => openOrFocus(`/${chapter.domain}`, chapter.title)}>
+        {chapter.title} ({chapter.steps.length})
+      </button>
+      <button onClick={() => closeChapter(chapter.id)}>×</button>
+    </div>
   ));
 }
 ```
@@ -362,41 +412,47 @@ function ChapterTabs() {
 Build a contextual sidebar where clicking items swaps the view without adding to the back stack:
 
 ```tsx
-function Sidebar({ items }) {
+function DeviceSidebar({ devices }) {
   const { replace } = useJourneyNavigate();
 
-  return items.map(item => (
-    <button key={item.id} onClick={() => replace(item.path, item.label)}>
-      {item.label}
+  return devices.map(device => (
+    <button key={device.id} onClick={() => replace(`/devices/${device.id}`, device.name)}>
+      {device.name}
     </button>
   ));
 }
 ```
 
-### Main Menu with Fresh Chapters
+### Main Menu with Persistent Chapters
 
-Top-level navigation that always starts a new context:
+Top-level navigation that reuses existing chapters instead of spawning duplicates:
 
 ```tsx
-function MainNav({ items }) {
-  const { openFresh } = useJourneyNavigate();
+function MainNav() {
+  const { openOrFocus, openFresh } = useJourneyNavigate();
 
-  return items.map(item => (
-    <button key={item.path} onClick={() => openFresh(item.path, item.label)}>
-      {item.label}
-    </button>
-  ));
+  return (
+    <nav>
+      <button onClick={() => openOrFocus('/dashboard', 'Dashboard')}>Dashboard</button>
+      <button onClick={() => openOrFocus('/devices', 'Devices')}>Devices</button>
+      <button onClick={() => openOrFocus('/services', 'Services')}>Services</button>
+      <button onClick={() => openOrFocus('/companies', 'Companies')}>Companies</button>
+      <button onClick={() => openFresh('/assets/new', 'New Asset')}>+ New Asset</button>
+    </nav>
+  );
 }
 ```
 
-### Overriding Significance on Launchpad Pages
+`openOrFocus` finds the existing chapter for a domain, while `openFresh` always creates a new one. Click "Devices" twice? Same chapter. Click "New Asset" twice? Two independent chapters.
+
+### Overriding Significance on Dashboard Pages
 
 Some pages like dashboards or search results link into multiple domains. Without overrides, every link would create a new chapter. Use `false` to keep the user in the current chapter:
 
 ```tsx
 // From a dashboard — extend the current chapter, don't start a new one
-<button onClick={() => navigate('/clients/6', 'Meridian', { significant: false })}>
-  Meridian Super Fund
+<button onClick={() => navigate('/devices/1', 'MacBook Pro', { significant: false })}>
+  MacBook Pro 16″
 </button>
 ```
 
@@ -405,7 +461,7 @@ Some pages like dashboards or search results link into multiple domains. Without
 Use `useJourneyBlock` to intercept destructive navigation:
 
 ```tsx
-function ClientForm({ clientId }) {
+function AssetForm() {
   const [isDirty, setIsDirty] = useState(false);
 
   useJourneyBlock((action) => {
@@ -417,7 +473,7 @@ function ClientForm({ clientId }) {
 }
 ```
 
-The guard only fires on destructive actions — `goBack()` and chapter close. Navigating to other chapters or pushing new steps does not trigger the guard, since those transitions are non-destructive.
+The guard fires on destructive actions — `goBack()`, `goToStep()`, and `closeChapter()`. Navigating to other chapters or pushing new steps does not trigger the guard, since those transitions are non-destructive.
 
 ### Preserving Form State Across Chapter Switches
 
@@ -426,14 +482,14 @@ When a user switches chapters, React unmounts the inactive chapter's components.
 Journey Stack doesn't manage component state — but each step's unique `id` gives you a natural key for stashing and restoring drafts.
 
 ```tsx
-function ClientForm({ clientId }) {
+function AssetForm() {
   const step = useCurrentStep();
   const stashKey = `draft:${step.id}`;
 
   // Rehydrate from stash on mount
   const [formState, setFormState] = useState(() => {
     const stashed = sessionStorage.getItem(stashKey);
-    return stashed ? JSON.parse(stashed) : { name: '', email: '' };
+    return stashed ? JSON.parse(stashed) : { name: '', type: '' };
   });
 
   // Stash on every change
@@ -451,7 +507,7 @@ function ClientForm({ clientId }) {
 }
 ```
 
-The `step.id` is unique per visit — so three `/client/new` forms open in three different chapters each get their own isolated draft. This works with any storage mechanism: `sessionStorage`, TanStack Query cache, Zustand, or a simple React context.
+The `step.id` is unique per visit — so three `/assets/new` forms open in three different chapters each get their own isolated draft. This works with any storage mechanism: `sessionStorage`, TanStack Query cache, Zustand, or a simple React context.
 
 ### Integration with React Router v6
 
@@ -463,7 +519,7 @@ import { useJourneyNavigate } from 'journey-stack';
 
 function useAppNavigate() {
   const routerNavigate = useNavigate();
-  const { navigate, replace, openFresh, goBack } = useJourneyNavigate();
+  const { navigate, replace, openFresh, openOrFocus, goBack } = useJourneyNavigate();
 
   return {
     push(path: string, label: string, options?: { significant?: boolean }) {
@@ -476,6 +532,10 @@ function useAppNavigate() {
     },
     fresh(path: string, label: string) {
       openFresh(path, label);
+      routerNavigate(path);
+    },
+    focus(path: string, label: string) {
+      openOrFocus(path, label);
       routerNavigate(path);
     },
     back() {

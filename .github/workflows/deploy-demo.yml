@@ -21,9 +21,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter journey-stack build
-      - run: pnpm --filter investment-demo build
+      - run: pnpm --filter asset-register build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: examples/investment-demo/dist
+          path: examples/asset-register/dist
       - id: deployment
         uses: actions/deploy-pages@v4

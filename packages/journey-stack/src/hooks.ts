@@ -49,11 +49,14 @@ export type JourneyNavigateFns = {
   navigate: (path: string, label: string, options?: NavigateOptions) => void;
   replace: (path: string, label: string) => void;
   openFresh: (path: string, label: string) => void;
+  openOrFocus: (path: string, label: string) => void;
   goBack: () => void;
+  goToStep: (chapterId: string, stepIndex: number) => void;
+  closeChapter: (chapterId: string) => void;
 };
 
 /**
- * Returns navigation functions: navigate, replace, openFresh, goBack.
+ * Returns navigation functions: navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter.
  */
 export function useJourneyNavigate(): JourneyNavigateFns {
   const { dispatch } = useJourneyContext();
@@ -76,11 +79,29 @@ export function useJourneyNavigate(): JourneyNavigateFns {
     [dispatch],
   );
 
+  const openOrFocus = useCallback(
+    (path: string, label: string) =>
+      dispatch({ type: "OPEN_OR_FOCUS", path, label }),
+    [dispatch],
+  );
+
   const goBack = useCallback(() => dispatch({ type: "GO_BACK" }), [dispatch]);
 
+  const goToStep = useCallback(
+    (chapterId: string, stepIndex: number) =>
+      dispatch({ type: "GO_TO_STEP", chapterId, stepIndex }),
+    [dispatch],
+  );
+
+  const closeChapter = useCallback(
+    (chapterId: string) =>
+      dispatch({ type: "CLOSE_CHAPTER", chapterId }),
+    [dispatch],
+  );
+
   return useMemo(
-    () => ({ navigate, replace, openFresh, goBack }),
-    [navigate, replace, openFresh, goBack],
+    () => ({ navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter }),
+    [navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter],
   );
 }
 

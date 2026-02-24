@@ -313,4 +313,198 @@ describe("reducer", () => {
     });
   });
 
+  describe("OPEN_OR_FOCUS", () => {
+    const config: JourneyConfig = {
+      mode: "chapters",
+      domains: ["devices", "services", "companies"],
+    };
+
+    it("creates chapter when none exists for domain", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+
+      expect(state.chapters).toHaveLength(2);
+      expect(getActive(state).title).toBe("Devices");
+      expect(getActive(state).domain).toBe("devices");
+    });
+
+    it("switches to existing chapter when one exists", () => {
+      let state = createInitialState(config);
+      // Create a devices chapter
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+      const devicesChapterId = state.activeChapterId;
+
+      // Create a services chapter
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/services", label: "Services" },
+        config,
+      );
+      expect(state.activeChapterId).not.toBe(devicesChapterId);
+
+      // Now focus back on devices — should NOT create a new chapter
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+
+      expect(state.chapters).toHaveLength(3); // Home + Devices + Services
+      expect(state.activeChapterId).toBe(devicesChapterId);
+    });
+
+    it("does not create duplicate chapters for same domain", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices/1", label: "Device 1" },
+        config,
+      );
+
+      // Should still only have 2 chapters: Home + Devices
+      const devicesChapters = state.chapters.filter((c) => c.domain === "devices");
+      expect(devicesChapters).toHaveLength(1);
+    });
+
+    it("is a no-op when target chapter is already active", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+      const before = state;
+
+      state = journeyReducer(
+        state,
+        { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
+        config,
+      );
+
+      // Should return same reference (no-op)
+      expect(state).toBe(before);
+    });
+  });
+
+  describe("GO_TO_STEP", () => {
+    const config: JourneyConfig = { mode: "trail" };
+
+    it("truncates steps to the given index", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/b", label: "B" }, config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/c", label: "C" }, config);
+
+      const chapterId = getActive(state).id;
+      // Go back to step index 1 (which is "/a")
+      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 1 }, config);
+
+      expect(getActive(state).steps).toHaveLength(2);
+      expect(currentStep(state).path).toBe("/a");
+    });
+
+    it("is a no-op for out-of-bounds index", () => {
+      let state = createInitialState(config);
+      const chapterId = getActive(state).id;
+
+      const before = state;
+      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 5 }, config);
+      expect(state).toBe(before);
+
+      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: -1 }, config);
+      expect(state).toBe(before);
+    });
+
+    it("keeps all steps when going to the last step", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
+
+      const chapterId = getActive(state).id;
+      const before = state;
+      state = journeyReducer(state, { type: "GO_TO_STEP", chapterId, stepIndex: 1 }, config);
+
+      // Step index 1 is the last step, so no truncation
+      expect(getActive(state).steps).toHaveLength(2);
+    });
+  });
+
+  describe("CLOSE_CHAPTER", () => {
+    const config: JourneyConfig = { mode: "trail" };
+
+    it("removes the chapter and activates previous", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(
+        state,
+        { type: "OPEN_FRESH", path: "/x", label: "X" },
+        config,
+      );
+      const chapterToClose = state.activeChapterId;
+      expect(state.chapters).toHaveLength(2);
+
+      state = journeyReducer(
+        state,
+        { type: "CLOSE_CHAPTER", chapterId: chapterToClose },
+        config,
+      );
+
+      expect(state.chapters).toHaveLength(1);
+      expect(getActive(state).title).toBe("Home");
+    });
+
+    it("creates default chapter when closing the last chapter", () => {
+      let state = createInitialState(config);
+      const onlyChapter = state.chapters[0].id;
+
+      state = journeyReducer(
+        state,
+        { type: "CLOSE_CHAPTER", chapterId: onlyChapter },
+        config,
+      );
+
+      expect(state.chapters).toHaveLength(1);
+      expect(getActive(state).steps[0].path).toBe("/");
+    });
+
+    it("can close a non-active chapter", () => {
+      let state = createInitialState(config);
+      const homeId = state.chapters[0].id;
+
+      state = journeyReducer(
+        state,
+        { type: "OPEN_FRESH", path: "/x", label: "X" },
+        config,
+      );
+      const activeId = state.activeChapterId;
+      expect(state.chapters).toHaveLength(2);
+
+      // Close the home chapter (not active)
+      state = journeyReducer(
+        state,
+        { type: "CLOSE_CHAPTER", chapterId: homeId },
+        config,
+      );
+
+      expect(state.chapters).toHaveLength(1);
+      expect(state.activeChapterId).toBe(activeId); // active didn't change
+    });
+  });
+
 });

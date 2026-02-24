@@ -57,11 +57,31 @@ export type GoBackAction = {
   type: "GO_BACK";
 };
 
+export type OpenOrFocusAction = {
+  type: "OPEN_OR_FOCUS";
+  path: string;
+  label: string;
+};
+
+export type GoToStepAction = {
+  type: "GO_TO_STEP";
+  chapterId: string;
+  stepIndex: number;
+};
+
+export type CloseChapterAction = {
+  type: "CLOSE_CHAPTER";
+  chapterId: string;
+};
+
 export type JourneyAction =
   | NavigateAction
   | ReplaceAction
   | OpenFreshAction
-  | GoBackAction;
+  | GoBackAction
+  | OpenOrFocusAction
+  | GoToStepAction
+  | CloseChapterAction;
 
 // --- Navigation guards ---
 
