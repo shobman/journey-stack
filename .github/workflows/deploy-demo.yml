@@ -2,11 +2,12 @@ name: Deploy Demo
 on:
   push:
     branches: [main]
-    paths: ["examples/**", "packages/**"]
+    paths: ["examples/**", "packages/**", ".github/workflows/**"]
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
