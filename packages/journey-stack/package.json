@@ -29,7 +29,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "prepack": "cp ../../README.md ."
+    "prepack": "node -e \"require('fs').copyFileSync('../../README.md','./README.md')\""
   },
   "peerDependencies": {
     "react": ">=18.0.0"
