@@ -13,17 +13,6 @@ export function BackBar() {
 
   const steps = chapter.steps;
 
-  const backLabel =
-    atChapterRoot && hasPreviousChapter
-      ? (() => {
-          const idx = chapters.findIndex((c) => c.id === chapter.id);
-          const prev = chapters[Math.max(0, idx - 1)];
-          return prev && prev.id !== chapter.id
-            ? `← ${prev.title}`
-            : "← Back";
-        })()
-      : "← Back";
-
   return (
     <div
       style={{
@@ -61,7 +50,7 @@ export function BackBar() {
             e.currentTarget.style.borderColor = "#e2e8f0";
           }}
         >
-          {backLabel}
+          <span>← Back</span>
         </button>
       )}
       <div

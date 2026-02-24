@@ -133,3 +133,145 @@ export function useJourneyBlock(blocker: JourneyBlockerFn): void {
     };
   }, [blockersRef, stableBlocker]);
 }
+
+// --- Browser history sync ---
+
+type HistoryStateData = {
+  _journeySync: true;
+  position: number;
+  path: string;
+  label: string;
+};
+
+function computeDepth(state: JourneyWorkspace): number {
+  return state.chapters.reduce((sum, ch) => sum + ch.steps.length, 0);
+}
+
+function getActiveTopStep(state: JourneyWorkspace): JourneyStep | undefined {
+  const chapter = state.chapters.find((c) => c.id === state.activeChapterId);
+  return chapter ? chapter.steps[chapter.steps.length - 1] : undefined;
+}
+
+/**
+ * Syncs journey state with the browser History API so that the
+ * browser back/forward buttons mirror journey navigation.
+ *
+ * - Forward navigation pushes a history entry via `pushState`
+ * - Backward navigation (goBack, goToStep, closeChapter) calls `history.go(-N)`
+ * - Browser back dispatches `GO_BACK`
+ * - Browser forward dispatches `NAVIGATE` to the stored path
+ *
+ * Call once inside the `<JourneyProvider>` tree:
+ *
+ *   function App() {
+ *     useJourneyBrowserSync();
+ *     return <PageRouter />;
+ *   }
+ */
+export function useJourneyBrowserSync(): void {
+  if (typeof window === "undefined") return;
+
+  const { state, dispatch } = useJourneyContext();
+
+  const positionRef = useRef(0);
+  const depthRef = useRef(computeDepth(state));
+  const stepIdRef = useRef(getActiveTopStep(state)?.id ?? "");
+
+  // Suppress flags to break feedback loops
+  const suppressPushRef = useRef(false); // prevents state→browser sync
+  const suppressPopRef = useRef(false); // prevents browser→journey sync
+
+  // Initialize history state on mount
+  useEffect(() => {
+    const step = getActiveTopStep(state);
+    const data: HistoryStateData = {
+      _journeySync: true,
+      position: 0,
+      path: step?.path ?? "/",
+      label: step?.label ?? "Home",
+    };
+    history.replaceState(data, "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Listen for browser back/forward
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (suppressPopRef.current) {
+        suppressPopRef.current = false;
+        return;
+      }
+
+      const data = event.state as HistoryStateData | null;
+      if (!data || !data._journeySync) return;
+
+      const incoming = data.position;
+      const current = positionRef.current;
+
+      if (incoming < current) {
+        // Browser back
+        const delta = current - incoming;
+        suppressPushRef.current = true;
+        positionRef.current = incoming;
+        for (let i = 0; i < delta; i++) {
+          dispatch({ type: "GO_BACK" });
+        }
+      } else if (incoming > current) {
+        // Browser forward
+        suppressPushRef.current = true;
+        positionRef.current = incoming;
+        dispatch({ type: "NAVIGATE", path: data.path, label: data.label });
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [dispatch]);
+
+  // Sync journey state changes to browser history
+  useEffect(() => {
+    const newDepth = computeDepth(state);
+    const newStepId = getActiveTopStep(state)?.id ?? "";
+
+    if (suppressPushRef.current) {
+      suppressPushRef.current = false;
+      depthRef.current = newDepth;
+      stepIdRef.current = newStepId;
+      return;
+    }
+
+    const oldDepth = depthRef.current;
+    const oldStepId = stepIdRef.current;
+    const topStep = getActiveTopStep(state);
+
+    if (newDepth > oldDepth) {
+      // Forward: push a history entry
+      positionRef.current++;
+      const data: HistoryStateData = {
+        _journeySync: true,
+        position: positionRef.current,
+        path: topStep?.path ?? "/",
+        label: topStep?.label ?? "Home",
+      };
+      history.pushState(data, "");
+    } else if (newDepth < oldDepth) {
+      // Backward: sync browser history back
+      const delta = oldDepth - newDepth;
+      suppressPopRef.current = true;
+      positionRef.current -= delta;
+      history.go(-delta);
+    } else if (newStepId !== oldStepId) {
+      // Same depth, different step (replace or chapter switch)
+      const data: HistoryStateData = {
+        _journeySync: true,
+        position: positionRef.current,
+        path: topStep?.path ?? "/",
+        label: topStep?.label ?? "Home",
+      };
+      history.replaceState(data, "");
+    }
+
+    depthRef.current = newDepth;
+    stepIdRef.current = newStepId;
+  }, [state]);
+}

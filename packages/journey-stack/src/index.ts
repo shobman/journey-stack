@@ -30,6 +30,7 @@ export {
   useCurrentStep,
   useJourneyNavigate,
   useJourneyBlock,
+  useJourneyBrowserSync,
 } from "./hooks";
 export type { JourneyNavigateFns } from "./hooks";
 

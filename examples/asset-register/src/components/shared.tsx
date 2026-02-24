@@ -171,7 +171,7 @@ export function CrossNavHint({ children }: { children: ReactNode }) {
     <p
       style={{
         margin: "0 0 8px",
-        fontSize: "1em",
+        fontSize: "13px",
         color: "#c4b5fd",
         fontStyle: "italic",
       }}

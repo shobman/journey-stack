@@ -178,7 +178,7 @@ function ChapterTab({
             textAlign: "left",
           }}
         >
-          {currentStep?.label || chapter.title}
+          {chapter.title}
         </button>
         {stepCount > 1 && (
           <button

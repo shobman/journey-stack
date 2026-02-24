@@ -1,4 +1,4 @@
-import { JourneyProvider, useCurrentStep } from "journey-stack";
+import { JourneyProvider, useCurrentStep, useJourneyBrowserSync } from "journey-stack";
 import { TopNav } from "./components/TopNav";
 import { ChapterTabBar } from "./components/ChapterTabBar";
 import { BackBar } from "./components/BackBar";
@@ -39,6 +39,8 @@ function PageRouter() {
 }
 
 function AppShell() {
+  useJourneyBrowserSync();
+
   return (
     <div
       style={{
