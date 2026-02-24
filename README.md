@@ -2,6 +2,8 @@
 
 **Headless workspace navigation for React. Track user journeys, not route hierarchies.**
 
+### **[Live Demo: IT Asset Register](https://shobman.github.io/journey-stack/)**
+
 Traditional breadcrumbs show where a page sits in the route tree. Journey Stack tracks where the *user* actually went — and lets them retrace their steps, work across multiple contexts, and navigate complex apps without losing their place.
 
 ---
