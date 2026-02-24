@@ -1,6 +1,6 @@
 {
   "name": "journey-stack",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Headless React navigation library that tracks user journeys as chapters",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -19,7 +19,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "sideEffects": false,
   "scripts": {
@@ -27,7 +28,8 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepack": "cp ../../README.md ."
   },
   "peerDependencies": {
     "react": ">=18.0.0"
