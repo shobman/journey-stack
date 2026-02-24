@@ -1,5 +1,6 @@
 import { serviceList } from "../data";
-import { PageHeader, Card, RelatedItem } from "../components/shared";
+import { PageHeader, Card } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function ServiceList() {
   return (
@@ -10,7 +11,7 @@ export function ServiceList() {
       />
       <Card>
         {serviceList.map((s) => (
-          <RelatedItem
+          <AppLink
             key={s.id}
             to={`/services/${s.id}`}
             label={s.name}

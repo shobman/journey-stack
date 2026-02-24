@@ -1,5 +1,6 @@
 import { reportList } from "../data";
-import { PageHeader, Card, RelatedItem } from "../components/shared";
+import { PageHeader, Card } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function ReportList() {
   return (
@@ -10,7 +11,7 @@ export function ReportList() {
       />
       <Card>
         {reportList.map((r) => (
-          <RelatedItem
+          <AppLink
             key={r.id}
             to={`/reports/${r.id}`}
             label={r.title}

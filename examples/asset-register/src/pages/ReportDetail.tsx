@@ -3,9 +3,9 @@ import { reports, services } from "../data";
 import {
   PageHeader,
   Card,
-  RelatedItem,
   CrossNavHint,
 } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function ReportDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +31,7 @@ export function ReportDetail() {
         {report.linkedServices.map((sid) => {
           const s = services[sid];
           return s ? (
-            <RelatedItem
+            <AppLink
               key={sid}
               to={`/services/${sid}`}
               label={s.name}

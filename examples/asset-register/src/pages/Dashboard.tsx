@@ -4,7 +4,8 @@ import {
   companyList,
   reportList,
 } from "../data";
-import { PageHeader, Card, RelatedItem } from "../components/shared";
+import { PageHeader, Card } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function Dashboard() {
   return (
@@ -22,7 +23,7 @@ export function Dashboard() {
       >
         <Card title="Top Companies" domain="companies">
           {companyList.slice(0, 3).map((c) => (
-            <RelatedItem
+            <AppLink
               key={c.id}
               to={`/companies/${c.id}`}
               label={c.name}
@@ -32,7 +33,7 @@ export function Dashboard() {
         </Card>
         <Card title="Recent Devices" domain="devices">
           {deviceList.slice(0, 3).map((d) => (
-            <RelatedItem
+            <AppLink
               key={d.id}
               to={`/devices/${d.id}`}
               label={d.name}
@@ -45,7 +46,7 @@ export function Dashboard() {
             .filter((s) => s.status === "Active")
             .slice(0, 3)
             .map((s) => (
-              <RelatedItem
+              <AppLink
                 key={s.id}
                 to={`/services/${s.id}`}
                 label={s.name}
@@ -55,7 +56,7 @@ export function Dashboard() {
         </Card>
         <Card title="Recent Reports" domain="reports">
           {reportList.map((r) => (
-            <RelatedItem
+            <AppLink
               key={r.id}
               to={`/reports/${r.id}`}
               label={r.title}

@@ -3,10 +3,10 @@ import { services, companies, devices, reportList } from "../data";
 import {
   PageHeader,
   Card,
-  RelatedItem,
   Badge,
   CrossNavHint,
 } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function ServiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +53,7 @@ export function ServiceDetail() {
         {linked.length > 0 && (
           <Card title="Linked Devices" domain="devices">
             {linked.map((d) => (
-              <RelatedItem
+              <AppLink
                 key={d.id}
                 to={`/devices/${d.id}`}
                 label={d.name}
@@ -65,7 +65,7 @@ export function ServiceDetail() {
         {relatedReports.length > 0 && (
           <Card title="Related Reports" domain="reports">
             {relatedReports.map((r) => (
-              <RelatedItem
+              <AppLink
                 key={r.id}
                 to={`/reports/${r.id}`}
                 label={r.title}
@@ -76,7 +76,7 @@ export function ServiceDetail() {
         )}
         {provider && (
           <Card title="Provider" domain="companies">
-            <RelatedItem
+            <AppLink
               to={`/companies/${provider.id}`}
               label={provider.name}
               sub={provider.type}

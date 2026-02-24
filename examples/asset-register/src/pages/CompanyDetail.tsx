@@ -3,9 +3,9 @@ import { companies, users, devices } from "../data";
 import {
   PageHeader,
   Card,
-  RelatedItem,
   CrossNavHint,
 } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
@@ -44,7 +44,7 @@ export function CompanyDetail() {
         {companyDevices.length > 0 && (
           <Card title="Devices" domain="devices">
             {companyDevices.map((d) => (
-              <RelatedItem
+              <AppLink
                 key={d.id}
                 to={`/devices/${d.id}`}
                 label={d.name}

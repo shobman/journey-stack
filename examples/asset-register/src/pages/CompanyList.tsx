@@ -1,5 +1,6 @@
 import { companyList } from "../data";
-import { PageHeader, Card, RelatedItem } from "../components/shared";
+import { PageHeader, Card } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function CompanyList() {
   return (
@@ -10,7 +11,7 @@ export function CompanyList() {
       />
       <Card>
         {companyList.map((c) => (
-          <RelatedItem
+          <AppLink
             key={c.id}
             to={`/companies/${c.id}`}
             label={c.name}

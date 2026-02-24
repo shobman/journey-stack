@@ -31,6 +31,7 @@ export {
   useJourneyNavigate,
   useJourneyBlock,
   useJourneyBrowserSync,
+  useWillBranch,
 } from "./hooks";
 export type { JourneyNavigateFns } from "./hooks";
 

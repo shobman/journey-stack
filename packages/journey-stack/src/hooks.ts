@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { JourneyContext } from "./context";
+import { resolveSignificance } from "./significance";
 import type {
   JourneyBlockerFn,
   JourneyChapter,
@@ -132,6 +133,31 @@ export function useJourneyBlock(blocker: JourneyBlockerFn): void {
       blockersRef.current.delete(stableBlocker);
     };
   }, [blockersRef, stableBlocker]);
+}
+
+/**
+ * Returns true if navigating to `path` would create a new chapter,
+ * false if it would extend the current chapter.
+ *
+ * Uses the same significance resolution as navigate():
+ * 1. If significant is true → return true
+ * 2. If significant is false → return false
+ * 3. If undefined → resolve from mode (trail always false,
+ *    chapters compares domains of current path vs target path)
+ *
+ * Pure read, no side effects.
+ */
+export function useWillBranch(path: string, significant?: boolean): boolean {
+  const { state, config } = useJourneyContext();
+  const active = state.chapters.find((c) => c.id === state.activeChapterId);
+  const currentPath = active?.steps[active.steps.length - 1]?.path ?? "/";
+  return resolveSignificance(
+    significant,
+    config.mode,
+    currentPath,
+    path,
+    config.domains,
+  );
 }
 
 // --- Browser history sync ---

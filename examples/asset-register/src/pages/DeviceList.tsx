@@ -1,5 +1,6 @@
 import { deviceList, users } from "../data";
-import { PageHeader, Card, RelatedItem } from "../components/shared";
+import { PageHeader, Card } from "../components/shared";
+import { AppLink } from "../components/AppLink";
 
 export function DeviceList() {
   return (
@@ -9,7 +10,7 @@ export function DeviceList() {
         {deviceList.map((d) => {
           const user = users[d.assignedTo];
           return (
-            <RelatedItem
+            <AppLink
               key={d.id}
               to={`/devices/${d.id}`}
               label={d.name}
