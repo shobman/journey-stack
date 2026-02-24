@@ -88,7 +88,7 @@ The decision engine that determines whether a navigation extends the current cha
 
 ## Navigation Gestures
 
-Seven distinct gestures cover every navigation pattern:
+Eight distinct gestures cover every navigation pattern:
 
 ### `navigate(path, label, options?)`
 
@@ -148,31 +148,23 @@ openOrFocus('/services', 'Services');
 openOrFocus('/devices', 'Devices');
 ```
 
-### `goBack()`
+### `goBack(count?)`
 
-Pops the current step off the stack (a true pop, not a cursor move). If at the root of a chapter, closes the chapter and returns to the previous one. The entire journey unwinds naturally.
+Pops `count` steps off the stack (default 1). This is a true pop, not a cursor move. If the count exceeds the number of steps in the active chapter, closes the chapter and returns to the previous one. The entire journey unwinds naturally.
 
-If a navigation guard is registered via `useJourneyBlock`, it will be consulted before the action proceeds.
+If a navigation guard is registered via `useJourneyBlock`, it will be consulted once before the action proceeds — not once per step.
 
 ```tsx
 const { goBack } = useJourneyNavigate();
 
-// Back button, keyboard shortcut, swipe gesture — whatever you want
+// Pop one step
 goBack();
-```
 
-### `goToStep(chapterId, stepIndex)`
+// Pop three steps at once (e.g. breadcrumb click)
+goBack(3);
 
-Truncates a chapter's stack to a specific step. Everything after that step is removed. Useful for breadcrumb close buttons — clicking × on a breadcrumb step pops back to that point.
-
-Respects navigation guards.
-
-```tsx
-const { goToStep } = useJourneyNavigate();
-const chapter = useActiveChapter();
-
-// Breadcrumb × button — pop back to step index 2
-goToStep(chapter.id, 2);
+// If count >= steps in chapter, closes the chapter
+goBack(10);
 ```
 
 ### `closeChapter(chapterId)`
@@ -186,6 +178,17 @@ const { closeChapter } = useJourneyNavigate();
 
 // Chapter tab × button
 closeChapter(chapter.id);
+```
+
+### `focusChapter(chapterId)`
+
+Switches the active chapter without closing any chapters. If the chapter is already active, this is a no-op.
+
+```tsx
+const { focusChapter } = useJourneyNavigate();
+
+// Switch to an existing chapter (e.g. clicking a chapter tab)
+focusChapter(chapter.id);
 ```
 
 ## Significance in Practice
@@ -232,7 +235,7 @@ Wraps your app. Provides workspace context to all hooks.
 Returns the full workspace state.
 
 ```ts
-const { chapters, activeChapterId } = useJourney();
+const { chapters, activeChapterId, focusStack } = useJourney();
 ```
 
 #### `useActiveChapter()`
@@ -258,12 +261,12 @@ const step = useCurrentStep();
 Returns navigation functions.
 
 ```ts
-const { navigate, replace, openFresh, openOrFocus, goBack, goToStep, closeChapter } = useJourneyNavigate();
+const { navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter } = useJourneyNavigate();
 ```
 
 #### `useJourneyBlock(blocker)`
 
-Registers a navigation guard that intercepts destructive actions (`goBack`, `goToStep`, `closeChapter`). Non-destructive actions (navigate, replace, openFresh, openOrFocus) pass through unguarded.
+Registers a navigation guard that intercepts destructive actions (`goBack`, `closeChapter`). Non-destructive actions (navigate, replace, openFresh, openOrFocus, focusChapter) pass through unguarded.
 
 ```ts
 useJourneyBlock((action) => {
@@ -277,6 +280,36 @@ useJourneyBlock((action) => {
 ```
 
 The blocker is scoped to the component lifecycle — when the component unmounts, the blocker is automatically unregistered. Multiple blockers can coexist; all must return `true` for the action to proceed.
+
+#### `useWillBranch(path, significant?)`
+
+A pure-read hook that predicts whether navigating to `path` would create a new chapter (branch) based on the current significance resolution. Does not perform any navigation.
+
+```ts
+const willBranch = useWillBranch('/companies/1');
+// true if navigating there would create a new chapter
+
+const forcedBranch = useWillBranch('/companies/1', true);
+// true — significance override forces a branch
+
+const forcedExtend = useWillBranch('/companies/1', false);
+// false — significance override forces same-chapter
+```
+
+Useful for showing visual hints on links that will open a new chapter (e.g. a different color or icon).
+
+#### `useJourneyBrowserSync()`
+
+Syncs journey state with the browser's History API (`pushState`/`popstate`). Call this once in your app shell to enable browser back/forward button support.
+
+```tsx
+function AppShell() {
+  useJourneyBrowserSync();
+  return <>{/* your app */}</>;
+}
+```
+
+Not needed if you're using React Router integration — in that case, write your own sync hook that coordinates both systems.
 
 ### `<JourneyLink>`
 
@@ -320,7 +353,8 @@ type JourneyChapter = {
 
 type JourneyWorkspace = {
   chapters: JourneyChapter[];
-  activeChapterId: string;
+  focusStack: string[];       // chapter IDs in focus order (last = active)
+  activeChapterId: string;    // derived from focusStack
 };
 ```
 
@@ -355,14 +389,14 @@ Planned mode that reads the React Router v6 route tree directly. If the target p
 
 ## Patterns
 
-### Breadcrumb with Overflow and Step Close
+### Clickable Breadcrumbs
 
-The stack grows without limit. Truncate in the UI. Each breadcrumb step can have a × button that pops back to that point using `goToStep`:
+The stack grows without limit. Truncate in the UI. Clicking an earlier breadcrumb step pops back to that point using `goBack(count)`:
 
 ```tsx
 function Breadcrumbs() {
   const chapter = useActiveChapter();
-  const { goBack, goToStep } = useJourneyNavigate();
+  const { goBack } = useJourneyNavigate();
   if (!chapter) return null;
 
   const steps = chapter.steps;
@@ -372,16 +406,21 @@ function Breadcrumbs() {
 
   return (
     <nav>
-      <button onClick={goBack}>←</button>
+      <button onClick={() => goBack()}>←</button>
       {hasOverflow && <span>…</span>}
-      {visible.map((step, i) => (
-        <span key={step.id}>
-          {step.label}
-          {i < visible.length - 1 && (
-            <button onClick={() => goToStep(chapter.id, steps.indexOf(step))}>×</button>
-          )}
-        </span>
-      ))}
+      {visible.map((step, i) => {
+        const isLast = i === visible.length - 1;
+        const popCount = steps.length - 1 - steps.indexOf(step);
+        return (
+          <span key={step.id}>
+            {isLast ? (
+              <strong>{step.label}</strong>
+            ) : (
+              <button onClick={() => goBack(popCount)}>{step.label}</button>
+            )}
+          </span>
+        );
+      })}
     </nav>
   );
 }
@@ -394,11 +433,11 @@ Render workspace tabs from the journey state, with × buttons to close chapters:
 ```tsx
 function ChapterTabs() {
   const { chapters, activeChapterId } = useJourney();
-  const { openOrFocus, closeChapter } = useJourneyNavigate();
+  const { focusChapter, closeChapter } = useJourneyNavigate();
 
   return chapters.map(chapter => (
     <div key={chapter.id} data-active={chapter.id === activeChapterId}>
-      <button onClick={() => openOrFocus(`/${chapter.domain}`, chapter.title)}>
+      <button onClick={() => focusChapter(chapter.id)}>
         {chapter.title} ({chapter.steps.length})
       </button>
       <button onClick={() => closeChapter(chapter.id)}>×</button>
@@ -473,7 +512,7 @@ function AssetForm() {
 }
 ```
 
-The guard fires on destructive actions — `goBack()`, `goToStep()`, and `closeChapter()`. Navigating to other chapters or pushing new steps does not trigger the guard, since those transitions are non-destructive.
+The guard fires on destructive actions — `goBack()` and `closeChapter()`. Navigating to other chapters, focusing chapters, or pushing new steps does not trigger the guard, since those transitions are non-destructive.
 
 ### Preserving Form State Across Chapter Switches
 
@@ -519,7 +558,7 @@ import { useJourneyNavigate } from 'journey-stack';
 
 function useAppNavigate() {
   const routerNavigate = useNavigate();
-  const { navigate, replace, openFresh, openOrFocus, goBack } = useJourneyNavigate();
+  const { navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter } = useJourneyNavigate();
 
   return {
     push(path: string, label: string, options?: { significant?: boolean }) {
@@ -538,15 +577,15 @@ function useAppNavigate() {
       openOrFocus(path, label);
       routerNavigate(path);
     },
-    back() {
-      goBack();
-      routerNavigate(-1);
+    back(count?: number) {
+      goBack(count);
+      // Sync hook detects state change and updates Router
     },
   };
 }
 ```
 
-This thin wrapper keeps the two systems in sync while leaving Journey Stack decoupled from any routing library.
+This thin wrapper keeps the two systems in sync while leaving Journey Stack decoupled from any routing library. For backward navigation (`back`, `closeChapter`, `focusChapter`), you typically only call journey-stack and let a sync effect update the router — see the example app for a full bidirectional sync implementation.
 
 ## Design Philosophy
 
