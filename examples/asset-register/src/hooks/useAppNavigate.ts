@@ -98,9 +98,12 @@ export function useAppNavigate() {
     [journeyOpenOrFocus, routerNavigate, suppressRouterSync, suppressLocationDispatch, positionRef, getJourneyState],
   );
 
-  const back = useCallback(() => {
-    journeyGoBack();
-  }, [journeyGoBack]);
+  const back = useCallback(
+    (count?: number) => {
+      journeyGoBack(count);
+    },
+    [journeyGoBack],
+  );
 
   const closeChapter = useCallback(
     (chapterId: string) => {

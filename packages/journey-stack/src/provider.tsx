@@ -22,14 +22,18 @@ export type JourneyProviderProps = {
  * Classifies a GO_BACK action into a consumer-facing BlockerAction
  * by inspecting the current workspace state.
  */
-export function classifyGoBack(state: JourneyWorkspace): BlockerAction | null {
+export function classifyGoBack(
+  state: JourneyWorkspace,
+  count = 1,
+): BlockerAction | null {
   const active = state.chapters.find((c) => c.id === state.activeChapterId);
   if (!active) return null;
 
-  if (active.steps.length > 1) {
+  if (active.steps.length > count) {
     return { type: "back", chapterId: active.id };
   }
 
+  // count >= steps → would close the chapter
   if (state.chapters.length <= 1) {
     return { type: "closeAll", chapterId: active.id };
   }
@@ -67,7 +71,7 @@ export function JourneyProvider({
       const blockers = blockersRef.current;
 
       if (action.type === "GO_BACK" && blockers.size > 0) {
-        const blockerAction = classifyGoBack(stateRef.current);
+        const blockerAction = classifyGoBack(stateRef.current, action.count);
         if (blockerAction) {
           const allAllowed = [...blockers].every((fn) => fn(blockerAction));
           if (!allAllowed) return;

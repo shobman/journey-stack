@@ -149,15 +149,18 @@ export function journeyReducer(
       const active = getActiveChapter(state);
       if (!active) return state;
 
-      if (active.steps.length > 1) {
-        // Pop current step — focusStack unchanged
+      const count = action.count ?? 1;
+      const remaining = active.steps.length - count;
+
+      if (remaining >= 1) {
+        // Pop count steps — keep first `remaining` steps
         return replaceChapter(state, active.id, (chapter) => ({
           ...chapter,
-          steps: chapter.steps.slice(0, -1),
+          steps: chapter.steps.slice(0, remaining),
         }));
       }
 
-      // At chapter root — close this chapter, previous in focusStack becomes active
+      // count >= steps → close chapter
       if (state.chapters.length <= 1) {
         // Last chapter — replace with default/home chapter
         const defaultChapter = createChapter(

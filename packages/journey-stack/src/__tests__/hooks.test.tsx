@@ -132,6 +132,25 @@ describe("useJourneyNavigate", () => {
     expect(result.current.step!.path).toBe("/a");
   });
 
+  it("goBack(count) pops multiple steps", () => {
+    const { result } = renderHook(
+      () => ({
+        nav: useJourneyNavigate(),
+        step: useCurrentStep(),
+        chapter: useActiveChapter(),
+      }),
+      { wrapper: trailWrapper },
+    );
+
+    act(() => result.current.nav.navigate("/a", "A"));
+    act(() => result.current.nav.navigate("/b", "B"));
+    act(() => result.current.nav.navigate("/c", "C"));
+    act(() => result.current.nav.goBack(2));
+
+    expect(result.current.step!.path).toBe("/a");
+    expect(result.current.chapter!.steps).toHaveLength(2);
+  });
+
   it("chapters mode creates chapter on domain cross", () => {
     const { result } = renderHook(
       () => ({

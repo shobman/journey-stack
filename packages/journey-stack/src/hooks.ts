@@ -51,7 +51,7 @@ export type JourneyNavigateFns = {
   replace: (path: string, label: string) => void;
   openFresh: (path: string, label: string) => void;
   openOrFocus: (path: string, label: string) => void;
-  goBack: () => void;
+  goBack: (count?: number) => void;
   closeChapter: (chapterId: string) => void;
   focusChapter: (chapterId: string) => void;
 };
@@ -86,7 +86,10 @@ export function useJourneyNavigate(): JourneyNavigateFns {
     [dispatch],
   );
 
-  const goBack = useCallback(() => dispatch({ type: "GO_BACK" }), [dispatch]);
+  const goBack = useCallback(
+    (count?: number) => dispatch({ type: "GO_BACK", count }),
+    [dispatch],
+  );
 
   const closeChapter = useCallback(
     (chapterId: string) =>

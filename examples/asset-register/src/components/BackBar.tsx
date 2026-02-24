@@ -28,7 +28,7 @@ export function BackBar() {
     >
       {(hasStepHistory || (atChapterRoot && hasPreviousChapter)) && (
         <button
-          onClick={back}
+          onClick={() => back()}
           style={{
             background: "none",
             border: "1px solid #e2e8f0",
@@ -64,6 +64,7 @@ export function BackBar() {
       >
         {steps.map((step, i) => {
           const isLast = i === steps.length - 1;
+          const popCount = steps.length - 1 - i;
           return (
             <span
               key={step.id}
@@ -80,18 +81,48 @@ export function BackBar() {
                   ›
                 </span>
               )}
-              <span
-                style={{
-                  color: isLast ? "#334155" : "#94a3b8",
-                  fontWeight: isLast ? 500 : 400,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  fontSize: isLast ? "12px" : "11px",
-                }}
-              >
-                {step.label}
-              </span>
+              {isLast ? (
+                <span
+                  style={{
+                    color: "#334155",
+                    fontWeight: 500,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: "12px",
+                  }}
+                >
+                  {step.label}
+                </span>
+              ) : (
+                <button
+                  onClick={() => back(popCount)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#94a3b8",
+                    fontWeight: 400,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: "11px",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#3b82f6";
+                    e.currentTarget.style.textDecoration = "underline";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#94a3b8";
+                    e.currentTarget.style.textDecoration = "none";
+                  }}
+                >
+                  {step.label}
+                </button>
+              )}
             </span>
           );
         })}

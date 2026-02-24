@@ -311,6 +311,43 @@ describe("reducer", () => {
       expect(result.chapters).toHaveLength(1);
       expect(getActive(result).steps[0].path).toBe("/");
     });
+
+    it("pops multiple steps with count", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/b", label: "B" }, config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/c", label: "C" }, config);
+      state = journeyReducer(state, { type: "GO_BACK", count: 2 }, config);
+
+      expect(currentStep(state).path).toBe("/a");
+      expect(getActive(state).steps).toHaveLength(2);
+    });
+
+    it("closes chapter when count >= steps", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(
+        state,
+        { type: "OPEN_FRESH", path: "/x", label: "X" },
+        config,
+      );
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/y", label: "Y" }, config);
+      expect(state.chapters).toHaveLength(2);
+      expect(getActive(state).steps).toHaveLength(2);
+
+      state = journeyReducer(state, { type: "GO_BACK", count: 2 }, config);
+
+      expect(state.chapters).toHaveLength(1);
+      expect(getActive(state).title).toBe("Home");
+    });
+
+    it("creates default chapter when count >= steps on last chapter", () => {
+      let state = createInitialState(config);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
+      state = journeyReducer(state, { type: "GO_BACK", count: 5 }, config);
+
+      expect(state.chapters).toHaveLength(1);
+      expect(getActive(state).steps[0].path).toBe("/");
+    });
   });
 
   describe("OPEN_OR_FOCUS", () => {

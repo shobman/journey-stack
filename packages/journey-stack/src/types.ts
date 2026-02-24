@@ -56,6 +56,7 @@ export type OpenFreshAction = {
 
 export type GoBackAction = {
   type: "GO_BACK";
+  count?: number;
 };
 
 export type OpenOrFocusAction = {
