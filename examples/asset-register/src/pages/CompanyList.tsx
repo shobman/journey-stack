@@ -7,7 +7,7 @@ export function CompanyList() {
     <div>
       <PageHeader
         title="Companies"
-        subtitle="All company accounts — also available in the sidebar"
+        subtitle="All company accounts"
       />
       <Card>
         {companyList.map((c) => (

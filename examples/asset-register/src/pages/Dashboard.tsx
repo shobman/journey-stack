@@ -12,7 +12,7 @@ export function Dashboard() {
     <div>
       <PageHeader
         title="Dashboard"
-        subtitle="Your overview. Sidebar shows quick access — in-page links may cross domains."
+        subtitle="Your overview. Links below cross into domain workspaces."
       />
       <div
         style={{
@@ -22,7 +22,7 @@ export function Dashboard() {
         }}
       >
         <Card title="Top Companies" domain="companies">
-          {companyList.slice(0, 3).map((c) => (
+          {companyList.slice(0, 5).map((c) => (
             <AppLink
               key={c.id}
               to={`/companies/${c.id}`}
@@ -32,7 +32,7 @@ export function Dashboard() {
           ))}
         </Card>
         <Card title="Recent Devices" domain="devices">
-          {deviceList.slice(0, 3).map((d) => (
+          {deviceList.slice(0, 5).map((d) => (
             <AppLink
               key={d.id}
               to={`/devices/${d.id}`}
@@ -44,7 +44,7 @@ export function Dashboard() {
         <Card title="Active Services" domain="services">
           {serviceList
             .filter((s) => s.status === "Active")
-            .slice(0, 3)
+            .slice(0, 5)
             .map((s) => (
               <AppLink
                 key={s.id}
@@ -55,7 +55,7 @@ export function Dashboard() {
             ))}
         </Card>
         <Card title="Recent Reports" domain="reports">
-          {reportList.map((r) => (
+          {reportList.slice(0, 5).map((r) => (
             <AppLink
               key={r.id}
               to={`/reports/${r.id}`}

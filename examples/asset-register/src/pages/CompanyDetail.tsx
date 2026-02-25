@@ -1,9 +1,10 @@
 import { useParams } from "react-router-dom";
-import { companies, users, devices } from "../data";
+import { companies, users, devices, serviceList } from "../data";
 import {
   PageHeader,
   Card,
   CrossNavHint,
+  SeeAllLink,
 } from "../components/shared";
 import { AppLink } from "../components/AppLink";
 
@@ -23,6 +24,9 @@ export function CompanyDetail() {
   const companyDevices = company.devices
     .map((did) => devices[did])
     .filter(Boolean);
+  const companyServices = serviceList.filter(
+    (s) => s.provider === company.id,
+  );
 
   return (
     <div>
@@ -31,7 +35,7 @@ export function CompanyDetail() {
         subtitle={`${company.type} · Contact: ${company.contactName}`}
       />
       <CrossNavHint>
-        Device links below use auto cross-domain detection. Use sidebar links to
+        Device and service links auto-detect cross-domain. Use sidebar links to
         stay in-workspace.
       </CrossNavHint>
       <div
@@ -42,16 +46,48 @@ export function CompanyDetail() {
         }}
       >
         {companyDevices.length > 0 && (
-          <Card title="Devices" domain="devices">
-            {companyDevices.map((d) => (
-              <AppLink
-                key={d.id}
-                to={`/devices/${d.id}`}
-                label={d.name}
-                sub={`${d.type} · ${d.status}`}
+          <div>
+            <Card title="Devices" domain="devices">
+              {companyDevices.map((d) => (
+                <AppLink
+                  key={d.id}
+                  to={`/devices/${d.id}`}
+                  label={d.name}
+                  sub={`${d.type} · ${d.status}`}
+                />
+              ))}
+            </Card>
+            {companyDevices.length > 1 && (
+              <SeeAllLink
+                to={`/devices?company=${company.id}`}
+                label={`Devices for ${company.name}`}
+                count={companyDevices.length}
+                entityType="devices"
               />
-            ))}
-          </Card>
+            )}
+          </div>
+        )}
+        {companyServices.length > 0 && (
+          <div>
+            <Card title="Services" domain="services">
+              {companyServices.map((s) => (
+                <AppLink
+                  key={s.id}
+                  to={`/services/${s.id}`}
+                  label={s.name}
+                  sub={`${s.type} · ${s.cost}`}
+                />
+              ))}
+            </Card>
+            {companyServices.length > 1 && (
+              <SeeAllLink
+                to={`/services?company=${company.id}`}
+                label={`Services by ${company.name}`}
+                count={companyServices.length}
+                entityType="services"
+              />
+            )}
+          </div>
         )}
         {companyUsers.length > 0 && (
           <Card title="Users" domain="companies">

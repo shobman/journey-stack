@@ -20,7 +20,7 @@ function RootLayout() {
   return (
     <JourneyProvider
       mode="workspaces"
-      domains={["dashboard", "companies"]}
+      domains={["companies", "reports"]}
       homePath="/dashboard"
       homeLabel="Dashboard"
     >

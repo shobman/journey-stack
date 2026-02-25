@@ -1,10 +1,11 @@
 import { useParams } from "react-router-dom";
-import { devices, users, companies, serviceList } from "../data";
+import { devices, users, companies, serviceList, reportList } from "../data";
 import {
   PageHeader,
   Card,
   Badge,
   CrossNavHint,
+  SeeAllLink,
 } from "../components/shared";
 import { AppLink } from "../components/AppLink";
 
@@ -22,6 +23,9 @@ export function DeviceDetail() {
   const company = companies[device.company];
   const linkedServices = serviceList.filter((s) =>
     s.linkedDevices.includes(device.id),
+  );
+  const relatedReports = reportList.filter((r) =>
+    r.linkedDevices.includes(device.id),
   );
 
   return (
@@ -54,16 +58,26 @@ export function DeviceDetail() {
         }}
       >
         {linkedServices.length > 0 && (
-          <Card title="Linked Services" domain="services">
-            {linkedServices.map((s) => (
-              <AppLink
-                key={s.id}
-                to={`/services/${s.id}`}
-                label={s.name}
-                sub={s.cost}
+          <div>
+            <Card title="Linked Services" domain="services">
+              {linkedServices.map((s) => (
+                <AppLink
+                  key={s.id}
+                  to={`/services/${s.id}`}
+                  label={s.name}
+                  sub={s.cost}
+                />
+              ))}
+            </Card>
+            {linkedServices.length > 1 && (
+              <SeeAllLink
+                to={`/services?device=${device.id}`}
+                label={`Services for ${device.name}`}
+                count={linkedServices.length}
+                entityType="services"
               />
-            ))}
-          </Card>
+            )}
+          </div>
         )}
         <Card title="Details" domain="devices">
           {company && (
@@ -93,6 +107,28 @@ export function DeviceDetail() {
             Purchased {device.purchaseDate}
           </div>
         </Card>
+        {relatedReports.length > 0 && (
+          <div>
+            <Card title="Related Reports" domain="reports">
+              {relatedReports.map((r) => (
+                <AppLink
+                  key={r.id}
+                  to={`/reports/${r.id}`}
+                  label={r.title}
+                  sub={r.author}
+                />
+              ))}
+            </Card>
+            {relatedReports.length > 1 && (
+              <SeeAllLink
+                to={`/reports?device=${device.id}`}
+                label={`Reports for ${device.name}`}
+                count={relatedReports.length}
+                entityType="reports"
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

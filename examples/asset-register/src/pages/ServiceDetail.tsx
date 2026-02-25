@@ -5,6 +5,7 @@ import {
   Card,
   Badge,
   CrossNavHint,
+  SeeAllLink,
 } from "../components/shared";
 import { AppLink } from "../components/AppLink";
 
@@ -51,28 +52,48 @@ export function ServiceDetail() {
         }}
       >
         {linked.length > 0 && (
-          <Card title="Linked Devices" domain="devices">
-            {linked.map((d) => (
-              <AppLink
-                key={d.id}
-                to={`/devices/${d.id}`}
-                label={d.name}
-                sub={`${d.type} · ${d.status}`}
+          <div>
+            <Card title="Linked Devices" domain="devices">
+              {linked.map((d) => (
+                <AppLink
+                  key={d.id}
+                  to={`/devices/${d.id}`}
+                  label={d.name}
+                  sub={`${d.type} · ${d.status}`}
+                />
+              ))}
+            </Card>
+            {linked.length > 1 && (
+              <SeeAllLink
+                to={`/devices?service=${service.id}`}
+                label={`Devices for ${service.name}`}
+                count={linked.length}
+                entityType="devices"
               />
-            ))}
-          </Card>
+            )}
+          </div>
         )}
         {relatedReports.length > 0 && (
-          <Card title="Related Reports" domain="reports">
-            {relatedReports.map((r) => (
-              <AppLink
-                key={r.id}
-                to={`/reports/${r.id}`}
-                label={r.title}
-                sub={r.author}
+          <div>
+            <Card title="Related Reports" domain="reports">
+              {relatedReports.map((r) => (
+                <AppLink
+                  key={r.id}
+                  to={`/reports/${r.id}`}
+                  label={r.title}
+                  sub={r.author}
+                />
+              ))}
+            </Card>
+            {relatedReports.length > 1 && (
+              <SeeAllLink
+                to={`/reports?service=${service.id}`}
+                label={`Reports for ${service.name}`}
+                count={relatedReports.length}
+                entityType="reports"
               />
-            ))}
-          </Card>
+            )}
+          </div>
         )}
         {provider && (
           <Card title="Provider" domain="companies">

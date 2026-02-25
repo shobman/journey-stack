@@ -112,6 +112,46 @@ export function CrossNavHint({ children }: { children: ReactNode }) {
   );
 }
 
+export function SeeAllLink({
+  to,
+  label,
+  count,
+  entityType,
+}: {
+  to: string;
+  label: string;
+  count: number;
+  entityType: string;
+}) {
+  const { push } = useAppNavigate();
+  return (
+    <button
+      onClick={() => push(to, label)}
+      style={{
+        background: "none",
+        border: "none",
+        color: "#3b82f6",
+        cursor: "pointer",
+        padding: "8px 12px 4px",
+        fontSize: "13px",
+        fontFamily: "inherit",
+        textAlign: "left",
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.textDecoration = "underline";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.textDecoration = "none";
+      }}
+    >
+      See {count} {entityType} &rarr;
+    </button>
+  );
+}
+
 export function SidebarSection({
   title,
   children,

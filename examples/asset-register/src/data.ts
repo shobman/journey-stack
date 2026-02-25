@@ -46,13 +46,16 @@ export type Report = {
   date: string;
   type: "Audit" | "Security" | "Cost Analysis" | "Compliance";
   linkedServices: string[];
+  linkedDevices: string[];
   related: string[];
 };
+
+// ── Devices ──────────────────────────────────────────────
 
 export const devices: Record<string, Device> = {
   d1: {
     id: "d1",
-    name: "MacBook Pro 16″",
+    name: "MacBook Pro 16\u2033",
     type: "Laptop",
     status: "Active",
     assignedTo: "u1",
@@ -110,7 +113,29 @@ export const devices: Record<string, Device> = {
     serial: "DMPXG5Q1HF",
     purchaseDate: "2021-08-30",
   },
+  d7: {
+    id: "d7",
+    name: "Surface Pro 9",
+    type: "Tablet",
+    status: "Active",
+    assignedTo: "u5",
+    company: "co5",
+    serial: "SP9-28KL4M",
+    purchaseDate: "2024-07-12",
+  },
+  d8: {
+    id: "d8",
+    name: "Dell PowerEdge R750",
+    type: "Server",
+    status: "Active",
+    assignedTo: "u6",
+    company: "co2",
+    serial: "PE-R750-9921",
+    purchaseDate: "2024-01-18",
+  },
 };
+
+// ── Services ─────────────────────────────────────────────
 
 export const services: Record<string, Service> = {
   s1: {
@@ -121,7 +146,7 @@ export const services: Record<string, Service> = {
     type: "SaaS",
     cost: "$12,000/yr",
     renewalDate: "2025-12-01",
-    linkedDevices: ["d1", "d2", "d4"],
+    linkedDevices: ["d1", "d2", "d4", "d7"],
   },
   s2: {
     id: "s2",
@@ -131,7 +156,7 @@ export const services: Record<string, Service> = {
     type: "IaaS",
     cost: "$8,500/mo",
     renewalDate: "2025-06-15",
-    linkedDevices: ["d5"],
+    linkedDevices: ["d5", "d8"],
   },
   s3: {
     id: "s3",
@@ -141,7 +166,7 @@ export const services: Record<string, Service> = {
     type: "SaaS",
     cost: "$3,200/yr",
     renewalDate: "2025-09-01",
-    linkedDevices: [],
+    linkedDevices: ["d1", "d2", "d7"],
   },
   s4: {
     id: "s4",
@@ -161,9 +186,41 @@ export const services: Record<string, Service> = {
     type: "PaaS",
     cost: "$200/mo",
     renewalDate: "2025-03-01",
-    linkedDevices: ["d5"],
+    linkedDevices: ["d5", "d8"],
+  },
+  s6: {
+    id: "s6",
+    name: "Slack Business+",
+    provider: "co5",
+    status: "Active",
+    type: "SaaS",
+    cost: "$4,800/yr",
+    renewalDate: "2026-02-01",
+    linkedDevices: ["d1", "d2", "d3", "d7"],
+  },
+  s7: {
+    id: "s7",
+    name: "GitHub Enterprise",
+    provider: "co5",
+    status: "Active",
+    type: "SaaS",
+    cost: "$9,600/yr",
+    renewalDate: "2026-04-15",
+    linkedDevices: ["d1", "d2", "d4", "d7", "d8"],
+  },
+  s8: {
+    id: "s8",
+    name: "Datadog Pro",
+    provider: "co2",
+    status: "Active",
+    type: "PaaS",
+    cost: "$1,200/mo",
+    renewalDate: "2026-01-01",
+    linkedDevices: ["d5", "d8"],
   },
 };
+
+// ── Companies ────────────────────────────────────────────
 
 export const companies: Record<string, Company> = {
   co1: {
@@ -182,7 +239,7 @@ export const companies: Record<string, Company> = {
     contactName: "James Morton",
     contactEmail: "j.morton@aws.example.com",
     users: [],
-    devices: ["d5"],
+    devices: ["d5", "d8"],
   },
   co3: {
     id: "co3",
@@ -202,7 +259,27 @@ export const companies: Record<string, Company> = {
     users: [],
     devices: [],
   },
+  co5: {
+    id: "co5",
+    name: "Initech Solutions",
+    type: "Vendor",
+    contactName: "Liam O'Brien",
+    contactEmail: "l.obrien@initech.example.com",
+    users: ["u5"],
+    devices: ["d7"],
+  },
+  co6: {
+    id: "co6",
+    name: "Umbrella Corp",
+    type: "Client",
+    contactName: "Nina Petrova",
+    contactEmail: "n.petrova@umbrella.example.com",
+    users: ["u6"],
+    devices: [],
+  },
 };
+
+// ── Users ────────────────────────────────────────────────
 
 export const users: Record<string, User> = {
   u1: {
@@ -237,7 +314,25 @@ export const users: Record<string, User> = {
     company: "co3",
     devices: ["d5"],
   },
+  u5: {
+    id: "u5",
+    name: "Eve Thompson",
+    email: "eve@initech.example.com",
+    role: "Security Analyst",
+    company: "co5",
+    devices: ["d7"],
+  },
+  u6: {
+    id: "u6",
+    name: "Frank Garcia",
+    email: "frank@umbrella.example.com",
+    role: "DevOps Engineer",
+    company: "co6",
+    devices: ["d8"],
+  },
 };
+
+// ── Reports ──────────────────────────────────────────────
 
 export const reports: Record<string, Report> = {
   r1: {
@@ -247,7 +342,8 @@ export const reports: Record<string, Report> = {
     date: "2025-12-15",
     type: "Security",
     linkedServices: ["s1", "s2"],
-    related: ["r2"],
+    linkedDevices: ["d1", "d2", "d5"],
+    related: ["r2", "r5"],
   },
   r2: {
     id: "r2",
@@ -255,8 +351,9 @@ export const reports: Record<string, Report> = {
     author: "Sarah Chen",
     date: "2025-11-28",
     type: "Cost Analysis",
-    linkedServices: ["s2", "s5"],
-    related: ["r1", "r3"],
+    linkedServices: ["s2", "s5", "s8"],
+    linkedDevices: ["d5", "d8"],
+    related: ["r1", "r3", "r6"],
   },
   r3: {
     id: "r3",
@@ -265,9 +362,62 @@ export const reports: Record<string, Report> = {
     date: "2026-01-10",
     type: "Compliance",
     linkedServices: ["s1", "s4"],
+    linkedDevices: ["d1", "d2", "d4"],
+    related: ["r2", "r7"],
+  },
+  r4: {
+    id: "r4",
+    title: "Device Lifecycle Analysis",
+    author: "Carol Williams",
+    date: "2026-01-22",
+    type: "Audit",
+    linkedServices: ["s1", "s4"],
+    linkedDevices: ["d1", "d4", "d6"],
+    related: ["r3"],
+  },
+  r5: {
+    id: "r5",
+    title: "Infrastructure Security Review",
+    author: "David Kim",
+    date: "2026-02-01",
+    type: "Security",
+    linkedServices: ["s2", "s5", "s8"],
+    linkedDevices: ["d5", "d8"],
+    related: ["r1", "r2"],
+  },
+  r6: {
+    id: "r6",
+    title: "SaaS Spend Optimization",
+    author: "Sarah Chen",
+    date: "2026-02-10",
+    type: "Cost Analysis",
+    linkedServices: ["s1", "s3", "s6", "s7"],
+    linkedDevices: ["d1", "d2", "d7"],
     related: ["r2"],
   },
+  r7: {
+    id: "r7",
+    title: "Endpoint Compliance Check",
+    author: "Eve Thompson",
+    date: "2026-02-15",
+    type: "Compliance",
+    linkedServices: ["s1", "s7"],
+    linkedDevices: ["d1", "d2", "d3", "d4", "d7"],
+    related: ["r3", "r4"],
+  },
+  r8: {
+    id: "r8",
+    title: "Q1 Vendor Risk Assessment",
+    author: "Liam O'Brien",
+    date: "2026-02-20",
+    type: "Audit",
+    linkedServices: ["s2", "s5", "s7"],
+    linkedDevices: ["d5", "d8"],
+    related: ["r1", "r5"],
+  },
 };
+
+// ── Derived lists ────────────────────────────────────────
 
 export const deviceList = Object.values(devices);
 export const serviceList = Object.values(services);

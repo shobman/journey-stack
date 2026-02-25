@@ -11,6 +11,7 @@ import {
   SidebarAction,
   SidebarLink,
 } from "./shared";
+import { ComparePanel } from "./ComparePanel";
 
 export function SideNav() {
   const workspace = useActiveWorkspace();
@@ -68,17 +69,7 @@ export function SideNav() {
         {domain === "reports" && <ReportsSidebar />}
       </div>
 
-      <div
-        style={{
-          padding: "10px 14px",
-          borderTop: "1px solid #f1f5f9",
-          marginTop: "auto",
-        }}
-      >
-        <div style={{ fontSize: "10px", color: "#cbd5e1" }}>
-          Sidebar stays stable within workspace
-        </div>
-      </div>
+      <ComparePanel />
     </div>
   );
 }

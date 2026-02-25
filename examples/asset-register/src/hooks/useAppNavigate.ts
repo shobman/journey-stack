@@ -4,6 +4,15 @@ import { useJourneyNavigate } from "journey-stack";
 import { SyncContext, type HistoryStateData } from "./SyncContext";
 
 /**
+ * Strips query string from a path so journey-stack sees a clean pathname
+ * for domain extraction, while React Router gets the full URL.
+ */
+function splitPath(fullPath: string): [pathname: string, fullUrl: string] {
+  const [pathname] = fullPath.split("?");
+  return [pathname, fullPath];
+}
+
+/**
  * App-level navigation that coordinates journey-stack and React Router.
  *
  * For forward navigation (push, swap, fresh, openOrFocus): calls both
@@ -28,72 +37,76 @@ export function useAppNavigate() {
     useContext(SyncContext);
 
   const push = useCallback(
-    (path: string, label: string, opts?: { significant?: boolean }) => {
+    (fullPath: string, label: string, opts?: { significant?: boolean }) => {
+      const [pathname, fullUrl] = splitPath(fullPath);
       suppressRouterSync.current = true;
       suppressLocationDispatch.current = true;
-      journeyNavigate(path, label, opts);
+      journeyNavigate(pathname, label, opts);
       positionRef.current++;
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
         workspaceId: getJourneyState().workspaceId,
-        path,
+        path: fullUrl,
         label,
       };
-      routerNavigate(path, { state });
+      routerNavigate(fullUrl, { state });
     },
     [journeyNavigate, routerNavigate, suppressRouterSync, suppressLocationDispatch, positionRef, getJourneyState],
   );
 
   const swap = useCallback(
-    (path: string, label: string) => {
+    (fullPath: string, label: string) => {
+      const [pathname, fullUrl] = splitPath(fullPath);
       suppressRouterSync.current = true;
       suppressLocationDispatch.current = true;
-      journeyReplace(path, label);
+      journeyReplace(pathname, label);
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
         workspaceId: getJourneyState().workspaceId,
-        path,
+        path: fullUrl,
         label,
       };
-      routerNavigate(path, { replace: true, state });
+      routerNavigate(fullUrl, { replace: true, state });
     },
     [journeyReplace, routerNavigate, suppressRouterSync, suppressLocationDispatch, positionRef, getJourneyState],
   );
 
   const fresh = useCallback(
-    (path: string, label: string) => {
+    (fullPath: string, label: string) => {
+      const [pathname, fullUrl] = splitPath(fullPath);
       suppressRouterSync.current = true;
       suppressLocationDispatch.current = true;
-      journeyOpenFresh(path, label);
+      journeyOpenFresh(pathname, label);
       positionRef.current++;
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
         workspaceId: getJourneyState().workspaceId,
-        path,
+        path: fullUrl,
         label,
       };
-      routerNavigate(path, { state });
+      routerNavigate(fullUrl, { state });
     },
     [journeyOpenFresh, routerNavigate, suppressRouterSync, suppressLocationDispatch, positionRef, getJourneyState],
   );
 
   const openOrFocus = useCallback(
-    (path: string, label: string) => {
+    (fullPath: string, label: string) => {
+      const [pathname, fullUrl] = splitPath(fullPath);
       suppressRouterSync.current = true;
       suppressLocationDispatch.current = true;
-      journeyOpenOrFocus(path, label);
+      journeyOpenOrFocus(pathname, label);
       positionRef.current++;
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
         workspaceId: getJourneyState().workspaceId,
-        path,
+        path: fullUrl,
         label,
       };
-      routerNavigate(path, { state });
+      routerNavigate(fullUrl, { state });
     },
     [journeyOpenOrFocus, routerNavigate, suppressRouterSync, suppressLocationDispatch, positionRef, getJourneyState],
   );
