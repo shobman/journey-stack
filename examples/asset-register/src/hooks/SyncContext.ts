@@ -3,7 +3,7 @@ import { createContext, type MutableRefObject } from "react";
 export type HistoryStateData = {
   _journeySync: true;
   position: number;
-  chapterId: string;
+  workspaceId: string;
   path: string;
   label: string;
 };
@@ -13,7 +13,7 @@ export type SyncContextValue = {
   suppressLocationDispatch: MutableRefObject<boolean>;
   positionRef: MutableRefObject<number>;
   getJourneyState: () => {
-    chapterId: string;
+    workspaceId: string;
     path: string;
     label: string;
   };

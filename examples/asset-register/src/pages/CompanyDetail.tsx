@@ -32,7 +32,7 @@ export function CompanyDetail() {
       />
       <CrossNavHint>
         Device links below use auto cross-domain detection. Use sidebar links to
-        stay in-chapter.
+        stay in-workspace.
       </CrossNavHint>
       <div
         style={{

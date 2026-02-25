@@ -1,4 +1,4 @@
-import { useActiveChapter } from "journey-stack";
+import { useActiveWorkspace } from "journey-stack";
 import {
   deviceList,
   serviceList,
@@ -12,11 +12,11 @@ import {
   SidebarLink,
 } from "./shared";
 
-export function ContextualSidebar() {
-  const chapter = useActiveChapter();
+export function SideNav() {
+  const workspace = useActiveWorkspace();
   const domainColor =
-    DOMAIN_COLORS[chapter?.domain ?? "dashboard"] || "#64748b";
-  const domain = chapter?.domain || "dashboard";
+    DOMAIN_COLORS[workspace?.domain ?? "dashboard"] || "#64748b";
+  const domain = workspace?.domain || "dashboard";
 
   return (
     <div
@@ -45,10 +45,10 @@ export function ContextualSidebar() {
             marginBottom: "4px",
           }}
         >
-          Chapter
+          Workspace
         </div>
         <div style={{ fontSize: "13px", fontWeight: 700, color: domainColor }}>
-          {chapter?.title || "Dashboard"}
+          {workspace?.title || "Dashboard"}
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export function ContextualSidebar() {
         }}
       >
         <div style={{ fontSize: "10px", color: "#cbd5e1" }}>
-          Sidebar stays stable within chapter
+          Sidebar stays stable within workspace
         </div>
       </div>
     </div>

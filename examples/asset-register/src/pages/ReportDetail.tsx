@@ -25,7 +25,7 @@ export function ReportDetail() {
       />
       <CrossNavHint>
         Service links auto-detect as cross-domain. Related reports in sidebar
-        stay in-chapter.
+        stay in-workspace.
       </CrossNavHint>
       <Card title="Referenced Services" domain="services">
         {report.linkedServices.map((sid) => {

@@ -1,23 +1,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useJourney } from "journey-stack";
-import type { JourneyChapter } from "journey-stack";
+import type { JourneyWorkspace } from "journey-stack";
 import { useAppNavigate } from "../hooks/useAppNavigate";
 import { DOMAIN_COLORS } from "./shared";
 
-export function ChapterTabBar() {
-  const { chapters, activeChapterId } = useJourney();
-  const { openOrFocus, closeChapter, focusChapter } = useAppNavigate();
+export function WorkspaceTabBar() {
+  const { workspaces, activeWorkspaceId } = useJourney();
+  const { openOrFocus, closeWorkspace, focusWorkspace } = useAppNavigate();
   const tabContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (tabContainerRef.current) {
       tabContainerRef.current.scrollLeft = tabContainerRef.current.scrollWidth;
     }
-  }, [chapters.length]);
+  }, [workspaces.length]);
 
   const handleCloseAll = () => {
-    const toClose = chapters.filter((c) => c.domain !== "dashboard");
-    toClose.forEach((c) => closeChapter(c.id));
+    const toClose = workspaces.filter((c) => c.domain !== "dashboard");
+    toClose.forEach((c) => closeWorkspace(c.id));
     openOrFocus("/dashboard", "Dashboard");
   };
 
@@ -40,26 +40,26 @@ export function ChapterTabBar() {
           gap: "2px",
         }}
       >
-        {chapters.map((chapter) => {
-          const isActive = chapter.id === activeChapterId;
-          const domainColor = DOMAIN_COLORS[chapter.domain] || "#64748b";
+        {workspaces.map((workspace) => {
+          const isActive = workspace.id === activeWorkspaceId;
+          const domainColor = DOMAIN_COLORS[workspace.domain] || "#64748b";
           return (
-            <ChapterTab
-              key={chapter.id}
-              chapter={chapter}
+            <WorkspaceTab
+              key={workspace.id}
+              workspace={workspace}
               isActive={isActive}
               domainColor={domainColor}
               onFocus={() => {
-                focusChapter(chapter.id);
+                focusWorkspace(workspace.id);
               }}
               onClose={(e) => {
                 e.stopPropagation();
-                closeChapter(chapter.id);
+                closeWorkspace(workspace.id);
               }}
             />
           );
         })}
-        {chapters.length > 1 && (
+        {workspaces.length > 1 && (
           <button
             onClick={handleCloseAll}
             style={{
@@ -89,14 +89,14 @@ export function ChapterTabBar() {
   );
 }
 
-function ChapterTab({
-  chapter,
+function WorkspaceTab({
+  workspace,
   isActive,
   domainColor,
   onFocus,
   onClose,
 }: {
-  chapter: JourneyChapter;
+  workspace: JourneyWorkspace;
   isActive: boolean;
   domainColor: string;
   onFocus: () => void;
@@ -119,7 +119,7 @@ function ChapterTab({
     return () => document.removeEventListener("mousedown", handler);
   }, [showDropdown]);
 
-  const stepCount = chapter.steps.length;
+  const stepCount = workspace.steps.length;
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }} ref={dropdownRef}>
@@ -176,7 +176,7 @@ function ChapterTab({
             textAlign: "left",
           }}
         >
-          {chapter.title}
+          {workspace.title}
         </button>
         {stepCount > 1 && (
           <button
@@ -251,10 +251,10 @@ function ChapterTab({
               letterSpacing: "0.05em",
             }}
           >
-            History in {chapter.title}
+            History in {workspace.title}
           </div>
-          {chapter.steps.map((step, i) => {
-            const isCurrent = i === chapter.steps.length - 1;
+          {workspace.steps.map((step, i) => {
+            const isCurrent = i === workspace.steps.length - 1;
             return (
               <div
                 key={step.id}

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ReactNode } from "react";
 import { JourneyProvider } from "../provider";
 import {
-  useActiveChapter,
+  useActiveWorkspace,
   useCurrentStep,
   useJourney,
   useJourneyNavigate,
@@ -11,7 +11,7 @@ import {
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <JourneyProvider mode="chapters" domains={["products", "settings"]}>
+    <JourneyProvider mode="workspaces" domains={["products", "settings"]}>
       {children}
     </JourneyProvider>
   );
@@ -22,10 +22,10 @@ function trailWrapper({ children }: { children: ReactNode }) {
 }
 
 describe("useJourney", () => {
-  it("returns workspace state", () => {
+  it("returns journey state", () => {
     const { result } = renderHook(() => useJourney(), { wrapper });
-    expect(result.current.chapters).toHaveLength(1);
-    expect(result.current.activeChapterId).toBeTruthy();
+    expect(result.current.workspaces).toHaveLength(1);
+    expect(result.current.activeWorkspaceId).toBeTruthy();
   });
 
   it("throws outside provider", () => {
@@ -35,9 +35,9 @@ describe("useJourney", () => {
   });
 });
 
-describe("useActiveChapter", () => {
-  it("returns active chapter", () => {
-    const { result } = renderHook(() => useActiveChapter(), { wrapper });
+describe("useActiveWorkspace", () => {
+  it("returns active workspace", () => {
+    const { result } = renderHook(() => useActiveWorkspace(), { wrapper });
     expect(result.current).toBeDefined();
     expect(result.current!.title).toBe("Home");
   });
@@ -57,7 +57,7 @@ describe("useJourneyNavigate", () => {
       () => ({
         nav: useJourneyNavigate(),
         journey: useJourney(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -66,8 +66,8 @@ describe("useJourneyNavigate", () => {
       result.current.nav.navigate("/page1", "Page 1");
     });
 
-    expect(result.current.chapter!.steps).toHaveLength(2);
-    expect(result.current.chapter!.steps[1].path).toBe("/page1");
+    expect(result.current.workspace!.steps).toHaveLength(2);
+    expect(result.current.workspace!.steps[1].path).toBe("/page1");
   });
 
   it("replace swaps current step", () => {
@@ -75,7 +75,7 @@ describe("useJourneyNavigate", () => {
       () => ({
         nav: useJourneyNavigate(),
         step: useCurrentStep(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -87,16 +87,16 @@ describe("useJourneyNavigate", () => {
       result.current.nav.replace("/b", "B");
     });
 
-    expect(result.current.chapter!.steps).toHaveLength(2); // Home + replaced
+    expect(result.current.workspace!.steps).toHaveLength(2); // Home + replaced
     expect(result.current.step!.path).toBe("/b");
   });
 
-  it("openFresh creates a new chapter", () => {
+  it("openFresh creates a new workspace", () => {
     const { result } = renderHook(
       () => ({
         nav: useJourneyNavigate(),
         journey: useJourney(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -105,8 +105,8 @@ describe("useJourneyNavigate", () => {
       result.current.nav.openFresh("/fresh", "Fresh");
     });
 
-    expect(result.current.journey.chapters).toHaveLength(2);
-    expect(result.current.chapter!.title).toBe("Fresh");
+    expect(result.current.journey.workspaces).toHaveLength(2);
+    expect(result.current.workspace!.title).toBe("Fresh");
   });
 
   it("goBack pops step", () => {
@@ -114,7 +114,7 @@ describe("useJourneyNavigate", () => {
       () => ({
         nav: useJourneyNavigate(),
         step: useCurrentStep(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -137,7 +137,7 @@ describe("useJourneyNavigate", () => {
       () => ({
         nav: useJourneyNavigate(),
         step: useCurrentStep(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -148,15 +148,15 @@ describe("useJourneyNavigate", () => {
     act(() => result.current.nav.goBack(2));
 
     expect(result.current.step!.path).toBe("/a");
-    expect(result.current.chapter!.steps).toHaveLength(2);
+    expect(result.current.workspace!.steps).toHaveLength(2);
   });
 
-  it("chapters mode creates chapter on domain cross", () => {
+  it("workspaces mode creates workspace on domain cross", () => {
     const { result } = renderHook(
       () => ({
         nav: useJourneyNavigate(),
         journey: useJourney(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper },
     );
@@ -168,15 +168,15 @@ describe("useJourneyNavigate", () => {
       result.current.nav.navigate("/settings", "Settings");
     });
 
-    expect(result.current.journey.chapters).toHaveLength(3);
-    expect(result.current.chapter!.title).toBe("Settings");
+    expect(result.current.journey.workspaces).toHaveLength(3);
+    expect(result.current.workspace!.title).toBe("Settings");
   });
 
   it("deduplicates navigation to same path", () => {
     const { result } = renderHook(
       () => ({
         nav: useJourneyNavigate(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -184,51 +184,51 @@ describe("useJourneyNavigate", () => {
     act(() => {
       result.current.nav.navigate("/a", "A");
     });
-    const len = result.current.chapter!.steps.length;
+    const len = result.current.workspace!.steps.length;
     act(() => {
       result.current.nav.navigate("/a", "A");
     });
-    expect(result.current.chapter!.steps.length).toBe(len);
+    expect(result.current.workspace!.steps.length).toBe(len);
   });
 
-  it("openOrFocus creates chapter then focuses existing on repeat", () => {
+  it("openOrFocus creates workspace then focuses existing on repeat", () => {
     const { result } = renderHook(
       () => ({
         nav: useJourneyNavigate(),
         journey: useJourney(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper },
     );
 
-    // First call creates a chapter
+    // First call creates a workspace
     act(() => {
       result.current.nav.openOrFocus("/products", "Products");
     });
-    expect(result.current.journey.chapters).toHaveLength(2);
-    const productsId = result.current.journey.activeChapterId;
+    expect(result.current.journey.workspaces).toHaveLength(2);
+    const productsId = result.current.journey.activeWorkspaceId;
 
     // Navigate away
     act(() => {
       result.current.nav.openOrFocus("/settings", "Settings");
     });
-    expect(result.current.journey.chapters).toHaveLength(3);
-    expect(result.current.journey.activeChapterId).not.toBe(productsId);
+    expect(result.current.journey.workspaces).toHaveLength(3);
+    expect(result.current.journey.activeWorkspaceId).not.toBe(productsId);
 
-    // Second call focuses existing — no new chapter
+    // Second call focuses existing — no new workspace
     act(() => {
       result.current.nav.openOrFocus("/products", "Products");
     });
-    expect(result.current.journey.chapters).toHaveLength(3);
-    expect(result.current.journey.activeChapterId).toBe(productsId);
+    expect(result.current.journey.workspaces).toHaveLength(3);
+    expect(result.current.journey.activeWorkspaceId).toBe(productsId);
   });
 
-  it("closeChapter removes a chapter", () => {
+  it("closeWorkspace removes a workspace", () => {
     const { result } = renderHook(
       () => ({
         nav: useJourneyNavigate(),
         journey: useJourney(),
-        chapter: useActiveChapter(),
+        workspace: useActiveWorkspace(),
       }),
       { wrapper: trailWrapper },
     );
@@ -236,14 +236,14 @@ describe("useJourneyNavigate", () => {
     act(() => {
       result.current.nav.openFresh("/x", "X");
     });
-    expect(result.current.journey.chapters).toHaveLength(2);
-    const xId = result.current.journey.activeChapterId;
+    expect(result.current.journey.workspaces).toHaveLength(2);
+    const xId = result.current.journey.activeWorkspaceId;
 
     act(() => {
-      result.current.nav.closeChapter(xId);
+      result.current.nav.closeWorkspace(xId);
     });
-    expect(result.current.journey.chapters).toHaveLength(1);
-    expect(result.current.chapter!.title).toBe("Home");
+    expect(result.current.journey.workspaces).toHaveLength(1);
+    expect(result.current.workspace!.title).toBe("Home");
   });
 
 });

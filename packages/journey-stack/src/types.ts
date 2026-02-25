@@ -5,20 +5,20 @@ export type JourneyStep = {
   timestamp: number;
 };
 
-export type JourneyChapter = {
+export type JourneyWorkspace = {
   id: string;
   title: string;
   domain: string;
   steps: JourneyStep[];
 };
 
-export type JourneyWorkspace = {
-  chapters: JourneyChapter[];
+export type JourneyState = {
+  workspaces: JourneyWorkspace[];
   focusStack: string[];
-  activeChapterId: string;
+  activeWorkspaceId: string;
 };
 
-export type JourneyMode = "trail" | "chapters" | "route-derived";
+export type JourneyMode = "trail" | "workspaces" | "route-derived";
 
 export type SignificanceResult = boolean | undefined;
 
@@ -65,14 +65,14 @@ export type OpenOrFocusAction = {
   label: string;
 };
 
-export type CloseChapterAction = {
-  type: "CLOSE_CHAPTER";
-  chapterId: string;
+export type CloseWorkspaceAction = {
+  type: "CLOSE_WORKSPACE";
+  workspaceId: string;
 };
 
-export type FocusChapterAction = {
-  type: "FOCUS_CHAPTER";
-  chapterId: string;
+export type FocusWorkspaceAction = {
+  type: "FOCUS_WORKSPACE";
+  workspaceId: string;
 };
 
 export type JourneyAction =
@@ -81,14 +81,14 @@ export type JourneyAction =
   | OpenFreshAction
   | GoBackAction
   | OpenOrFocusAction
-  | CloseChapterAction
-  | FocusChapterAction;
+  | CloseWorkspaceAction
+  | FocusWorkspaceAction;
 
 // --- Navigation guards ---
 
 export type BlockerAction = {
   type: "back" | "close" | "closeAll";
-  chapterId: string;
+  workspaceId: string;
 };
 
 export type JourneyBlockerFn = (action: BlockerAction) => boolean;

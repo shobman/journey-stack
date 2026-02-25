@@ -2,31 +2,31 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   createInitialState,
   journeyReducer,
-  resetChapterCounter,
+  resetWorkspaceCounter,
 } from "../reducer";
-import type { JourneyConfig, JourneyWorkspace } from "../types";
+import type { JourneyConfig, JourneyState } from "../types";
 
-function getActive(state: JourneyWorkspace) {
-  return state.chapters.find((c) => c.id === state.activeChapterId)!;
+function getActive(state: JourneyState) {
+  return state.workspaces.find((c) => c.id === state.activeWorkspaceId)!;
 }
 
-function currentStep(state: JourneyWorkspace) {
+function currentStep(state: JourneyState) {
   const ch = getActive(state);
   return ch.steps[ch.steps.length - 1];
 }
 
 describe("reducer", () => {
   beforeEach(() => {
-    resetChapterCounter();
+    resetWorkspaceCounter();
   });
 
   describe("initial state", () => {
-    it("creates a single home chapter", () => {
+    it("creates a single home workspace", () => {
       const config: JourneyConfig = { mode: "trail" };
       const state = createInitialState(config);
-      expect(state.chapters).toHaveLength(1);
-      expect(state.chapters[0].title).toBe("Home");
-      expect(state.chapters[0].steps[0].path).toBe("/");
+      expect(state.workspaces).toHaveLength(1);
+      expect(state.workspaces[0].title).toBe("Home");
+      expect(state.workspaces[0].steps[0].path).toBe("/");
     });
 
     it("uses custom home path and label", () => {
@@ -36,8 +36,8 @@ describe("reducer", () => {
         homeLabel: "Dashboard",
       };
       const state = createInitialState(config);
-      expect(state.chapters[0].steps[0].path).toBe("/dashboard");
-      expect(state.chapters[0].title).toBe("Dashboard");
+      expect(state.workspaces[0].steps[0].path).toBe("/dashboard");
+      expect(state.workspaces[0].title).toBe("Dashboard");
     });
 
 });
@@ -45,7 +45,7 @@ describe("reducer", () => {
   describe("NAVIGATE — trail mode", () => {
     const config: JourneyConfig = { mode: "trail" };
 
-    it("pushes steps onto the active chapter", () => {
+    it("pushes steps onto the active workspace", () => {
       let state = createInitialState(config);
       state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
       state = journeyReducer(state, { type: "NAVIGATE", path: "/b", label: "B" }, config);
@@ -55,7 +55,7 @@ describe("reducer", () => {
       expect(ch.steps.map((s) => s.path)).toEqual(["/", "/a", "/b"]);
     });
 
-    it("never creates a new chapter in trail mode", () => {
+    it("never creates a new workspace in trail mode", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -68,7 +68,7 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
     });
 
     it("deduplicates navigation to current path", () => {
@@ -80,13 +80,13 @@ describe("reducer", () => {
     });
   });
 
-  describe("NAVIGATE — chapters mode", () => {
+  describe("NAVIGATE — workspaces mode", () => {
     const config: JourneyConfig = {
-      mode: "chapters",
+      mode: "workspaces",
       domains: ["products", "settings", "users"],
     };
 
-    it("extends chapter within same domain", () => {
+    it("extends workspace within same domain", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -99,17 +99,17 @@ describe("reducer", () => {
         config,
       );
 
-      // Home chapter + products chapter (Home→Products crossed domains)
+      // Home workspace + products workspace (Home→Products crossed domains)
       // Actually: Home is at "/" with domain "", products has domain "products"
       // "" is not in domains list, so navigating FROM home extends. Let me check...
       // Actually the significance check: currentDomain="" targetDomain="products"
       // target "products" IS in domains list, and "" !== "products", so it IS significant
-      expect(state.chapters.length).toBe(2);
+      expect(state.workspaces.length).toBe(2);
       const active = getActive(state);
       expect(active.steps).toHaveLength(2); // products + products/123
     });
 
-    it("creates new chapter when crossing domains", () => {
+    it("creates new workspace when crossing domains", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -122,7 +122,7 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters.length).toBe(3); // Home, Products, Settings
+      expect(state.workspaces.length).toBe(3); // Home, Products, Settings
     });
 
     it("respects explicit significant=false override", () => {
@@ -133,7 +133,7 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).steps).toHaveLength(2);
     });
 
@@ -145,7 +145,7 @@ describe("reducer", () => {
         config,
       );
 
-      // Even though path didn't change domain, forced a new chapter
+      // Even though path didn't change domain, forced a new workspace
       // Wait — path IS "/" and current is "/" so it should dedup. Let me use a different path.
       // Actually the dedup check is path equality, and current is "/" target is "/" — that's a dedup.
       // Let me use a subpath.
@@ -159,7 +159,7 @@ describe("reducer", () => {
         },
         config,
       );
-      // Now we're at /products/1 in the products chapter
+      // Now we're at /products/1 in the products workspace
       state = journeyReducer(
         state,
         {
@@ -171,8 +171,8 @@ describe("reducer", () => {
         config,
       );
 
-      // Despite same domain, explicit significant=true forces new chapter
-      expect(state.chapters.length).toBe(3); // Home, Products (with /1), Products (with /2)
+      // Despite same domain, explicit significant=true forces new workspace
+      expect(state.workspaces.length).toBe(3); // Home, Products (with /1), Products (with /2)
     });
   });
 
@@ -193,7 +193,7 @@ describe("reducer", () => {
   describe("OPEN_FRESH", () => {
     const config: JourneyConfig = { mode: "trail" };
 
-    it("always creates a new chapter", () => {
+    it("always creates a new workspace", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -201,12 +201,12 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters).toHaveLength(2);
+      expect(state.workspaces).toHaveLength(2);
       expect(getActive(state).title).toBe("X");
       expect(getActive(state).steps).toHaveLength(1);
     });
 
-    it("creates new chapter even in trail mode", () => {
+    it("creates new workspace even in trail mode", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -214,7 +214,7 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters).toHaveLength(2);
+      expect(state.workspaces).toHaveLength(2);
     });
   });
 
@@ -231,7 +231,7 @@ describe("reducer", () => {
       }
     });
 
-    it("same path in same chapter gets different ids", () => {
+    it("same path in same workspace gets different ids", () => {
       let state = createInitialState(config);
       state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
       // navigate away then back to /a to bypass dedup
@@ -244,16 +244,16 @@ describe("reducer", () => {
       expect(aSteps[0].id).not.toBe(aSteps[1].id);
     });
 
-    it("same path in different chapters gets different ids", () => {
-      const chaptersConfig: JourneyConfig = {
-        mode: "chapters",
+    it("same path in different workspaces gets different ids", () => {
+      const workspacesConfig: JourneyConfig = {
+        mode: "workspaces",
         domains: ["a", "b"],
       };
-      let state = createInitialState(chaptersConfig);
-      state = journeyReducer(state, { type: "NAVIGATE", path: "/a/page", label: "Page" }, chaptersConfig);
+      let state = createInitialState(workspacesConfig);
+      state = journeyReducer(state, { type: "NAVIGATE", path: "/a/page", label: "Page" }, workspacesConfig);
       const firstId = getActive(state).steps[0].id;
 
-      state = journeyReducer(state, { type: "OPEN_FRESH", path: "/a/page", label: "Page" }, chaptersConfig);
+      state = journeyReducer(state, { type: "OPEN_FRESH", path: "/a/page", label: "Page" }, workspacesConfig);
       const secondId = getActive(state).steps[0].id;
 
       expect(firstId).not.toBe(secondId);
@@ -289,26 +289,26 @@ describe("reducer", () => {
       expect(getActive(state).steps).toHaveLength(2);
     });
 
-    it("closes chapter at root and activates previous", () => {
+    it("closes workspace at root and activates previous", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
         { type: "OPEN_FRESH", path: "/x", label: "X" },
         config,
       );
-      expect(state.chapters).toHaveLength(2);
+      expect(state.workspaces).toHaveLength(2);
 
       state = journeyReducer(state, { type: "GO_BACK" }, config);
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).title).toBe("Home");
     });
 
-    it("creates default chapter when closing the last chapter", () => {
+    it("creates default workspace when closing the last workspace", () => {
       const state = createInitialState(config);
       const result = journeyReducer(state, { type: "GO_BACK" }, config);
 
-      expect(result.chapters).toHaveLength(1);
+      expect(result.workspaces).toHaveLength(1);
       expect(getActive(result).steps[0].path).toBe("/");
     });
 
@@ -323,7 +323,7 @@ describe("reducer", () => {
       expect(getActive(state).steps).toHaveLength(2);
     });
 
-    it("closes chapter when count >= steps", () => {
+    it("closes workspace when count >= steps", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -331,32 +331,32 @@ describe("reducer", () => {
         config,
       );
       state = journeyReducer(state, { type: "NAVIGATE", path: "/y", label: "Y" }, config);
-      expect(state.chapters).toHaveLength(2);
+      expect(state.workspaces).toHaveLength(2);
       expect(getActive(state).steps).toHaveLength(2);
 
       state = journeyReducer(state, { type: "GO_BACK", count: 2 }, config);
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).title).toBe("Home");
     });
 
-    it("creates default chapter when count >= steps on last chapter", () => {
+    it("creates default workspace when count >= steps on last workspace", () => {
       let state = createInitialState(config);
       state = journeyReducer(state, { type: "NAVIGATE", path: "/a", label: "A" }, config);
       state = journeyReducer(state, { type: "GO_BACK", count: 5 }, config);
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).steps[0].path).toBe("/");
     });
   });
 
   describe("OPEN_OR_FOCUS", () => {
     const config: JourneyConfig = {
-      mode: "chapters",
+      mode: "workspaces",
       domains: ["devices", "services", "companies"],
     };
 
-    it("creates chapter when none exists for domain", () => {
+    it("creates workspace when none exists for domain", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -364,41 +364,41 @@ describe("reducer", () => {
         config,
       );
 
-      expect(state.chapters).toHaveLength(2);
+      expect(state.workspaces).toHaveLength(2);
       expect(getActive(state).title).toBe("Devices");
       expect(getActive(state).domain).toBe("devices");
     });
 
-    it("switches to existing chapter when one exists", () => {
+    it("switches to existing workspace when one exists", () => {
       let state = createInitialState(config);
-      // Create a devices chapter
+      // Create a devices workspace
       state = journeyReducer(
         state,
         { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
         config,
       );
-      const devicesChapterId = state.activeChapterId;
+      const devicesWorkspaceId = state.activeWorkspaceId;
 
-      // Create a services chapter
+      // Create a services workspace
       state = journeyReducer(
         state,
         { type: "OPEN_OR_FOCUS", path: "/services", label: "Services" },
         config,
       );
-      expect(state.activeChapterId).not.toBe(devicesChapterId);
+      expect(state.activeWorkspaceId).not.toBe(devicesWorkspaceId);
 
-      // Now focus back on devices — should NOT create a new chapter
+      // Now focus back on devices — should NOT create a new workspace
       state = journeyReducer(
         state,
         { type: "OPEN_OR_FOCUS", path: "/devices", label: "Devices" },
         config,
       );
 
-      expect(state.chapters).toHaveLength(3); // Home + Devices + Services
-      expect(state.activeChapterId).toBe(devicesChapterId);
+      expect(state.workspaces).toHaveLength(3); // Home + Devices + Services
+      expect(state.activeWorkspaceId).toBe(devicesWorkspaceId);
     });
 
-    it("does not create duplicate chapters for same domain", () => {
+    it("does not create duplicate workspaces for same domain", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -416,12 +416,12 @@ describe("reducer", () => {
         config,
       );
 
-      // Should still only have 2 chapters: Home + Devices
-      const devicesChapters = state.chapters.filter((c) => c.domain === "devices");
-      expect(devicesChapters).toHaveLength(1);
+      // Should still only have 2 workspaces: Home + Devices
+      const devicesWorkspaces = state.workspaces.filter((c) => c.domain === "devices");
+      expect(devicesWorkspaces).toHaveLength(1);
     });
 
-    it("is a no-op when target chapter is already active", () => {
+    it("is a no-op when target workspace is already active", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
@@ -441,64 +441,64 @@ describe("reducer", () => {
     });
   });
 
-  describe("CLOSE_CHAPTER", () => {
+  describe("CLOSE_WORKSPACE", () => {
     const config: JourneyConfig = { mode: "trail" };
 
-    it("removes the chapter and activates previous", () => {
+    it("removes the workspace and activates previous", () => {
       let state = createInitialState(config);
       state = journeyReducer(
         state,
         { type: "OPEN_FRESH", path: "/x", label: "X" },
         config,
       );
-      const chapterToClose = state.activeChapterId;
-      expect(state.chapters).toHaveLength(2);
+      const workspaceToClose = state.activeWorkspaceId;
+      expect(state.workspaces).toHaveLength(2);
 
       state = journeyReducer(
         state,
-        { type: "CLOSE_CHAPTER", chapterId: chapterToClose },
+        { type: "CLOSE_WORKSPACE", workspaceId: workspaceToClose },
         config,
       );
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).title).toBe("Home");
     });
 
-    it("creates default chapter when closing the last chapter", () => {
+    it("creates default workspace when closing the last workspace", () => {
       let state = createInitialState(config);
-      const onlyChapter = state.chapters[0].id;
+      const onlyWorkspace = state.workspaces[0].id;
 
       state = journeyReducer(
         state,
-        { type: "CLOSE_CHAPTER", chapterId: onlyChapter },
+        { type: "CLOSE_WORKSPACE", workspaceId: onlyWorkspace },
         config,
       );
 
-      expect(state.chapters).toHaveLength(1);
+      expect(state.workspaces).toHaveLength(1);
       expect(getActive(state).steps[0].path).toBe("/");
     });
 
-    it("can close a non-active chapter", () => {
+    it("can close a non-active workspace", () => {
       let state = createInitialState(config);
-      const homeId = state.chapters[0].id;
+      const homeId = state.workspaces[0].id;
 
       state = journeyReducer(
         state,
         { type: "OPEN_FRESH", path: "/x", label: "X" },
         config,
       );
-      const activeId = state.activeChapterId;
-      expect(state.chapters).toHaveLength(2);
+      const activeId = state.activeWorkspaceId;
+      expect(state.workspaces).toHaveLength(2);
 
-      // Close the home chapter (not active)
+      // Close the home workspace (not active)
       state = journeyReducer(
         state,
-        { type: "CLOSE_CHAPTER", chapterId: homeId },
+        { type: "CLOSE_WORKSPACE", workspaceId: homeId },
         config,
       );
 
-      expect(state.chapters).toHaveLength(1);
-      expect(state.activeChapterId).toBe(activeId); // active didn't change
+      expect(state.workspaces).toHaveLength(1);
+      expect(state.activeWorkspaceId).toBe(activeId); // active didn't change
     });
   });
 

@@ -4,10 +4,10 @@ import { useJourney, useJourneyNavigate, useCurrentStep } from "journey-stack";
 import type { HistoryStateData } from "./SyncContext";
 
 /**
- * Computes total step depth across all chapters.
+ * Computes total step depth across all workspaces.
  */
-function computeDepth(chapters: { steps: unknown[] }[]): number {
-  return chapters.reduce((sum, ch) => sum + ch.steps.length, 0);
+function computeDepth(workspaces: { steps: unknown[] }[]): number {
+  return workspaces.reduce((sum, ws) => sum + ws.steps.length, 0);
 }
 
 /**
@@ -17,9 +17,9 @@ function computeDepth(chapters: { steps: unknown[] }[]): number {
  * Returns refs that useAppNavigate consumes via SyncContext.
  */
 export function useRouterJourneySync() {
-  const { chapters, activeChapterId } = useJourney();
+  const { workspaces, activeWorkspaceId } = useJourney();
   const step = useCurrentStep();
-  const { navigate: journeyNavigate, goBack, focusChapter } = useJourneyNavigate();
+  const { navigate: journeyNavigate, goBack, focusWorkspace } = useJourneyNavigate();
 
   const routerNavigate = useNavigate();
   const location = useLocation();
@@ -34,20 +34,20 @@ export function useRouterJourneySync() {
 
   // --- Tracking refs ---
   const positionRef = useRef(0);
-  const depthRef = useRef(computeDepth(chapters));
+  const depthRef = useRef(computeDepth(workspaces));
   const stepIdRef = useRef(step?.id ?? "");
-  const chapterIdRef = useRef(activeChapterId);
+  const workspaceIdRef = useRef(activeWorkspaceId);
 
   // Live refs for use in effects
-  const chaptersRef = useRef(chapters);
-  chaptersRef.current = chapters;
-  const activeChapterIdRef = useRef(activeChapterId);
-  activeChapterIdRef.current = activeChapterId;
+  const workspacesRef = useRef(workspaces);
+  workspacesRef.current = workspaces;
+  const activeWorkspaceIdRef = useRef(activeWorkspaceId);
+  activeWorkspaceIdRef.current = activeWorkspaceId;
   const stepRef = useRef(step);
   stepRef.current = step;
 
   const getJourneyState = useCallback(() => ({
-    chapterId: activeChapterIdRef.current,
+    workspaceId: activeWorkspaceIdRef.current,
     path: stepRef.current?.path ?? "/dashboard",
     label: stepRef.current?.label ?? "Dashboard",
   }), []);
@@ -56,7 +56,7 @@ export function useRouterJourneySync() {
     return {
       _journeySync: true,
       position: positionRef.current,
-      chapterId: activeChapterIdRef.current,
+      workspaceId: activeWorkspaceIdRef.current,
       path: stepRef.current?.path ?? "/dashboard",
       label: stepRef.current?.label ?? "Dashboard",
       ...overrides,
@@ -91,46 +91,46 @@ export function useRouterJourneySync() {
 
   // --- Effect 2: State watcher — journey state → Router ---
   useEffect(() => {
-    const newDepth = computeDepth(chapters);
+    const newDepth = computeDepth(workspaces);
     const newStepId = step?.id ?? "";
-    const newChapterId = activeChapterId;
+    const newWorkspaceId = activeWorkspaceId;
 
     if (suppressRouterSync.current) {
       suppressRouterSync.current = false;
       depthRef.current = newDepth;
       stepIdRef.current = newStepId;
-      chapterIdRef.current = newChapterId;
+      workspaceIdRef.current = newWorkspaceId;
       return;
     }
 
     const oldDepth = depthRef.current;
-    const oldChapterId = chapterIdRef.current;
+    const oldWorkspaceId = workspaceIdRef.current;
     const oldStepId = stepIdRef.current;
 
     const currentPath = step?.path ?? "/dashboard";
 
     if (newDepth > oldDepth) {
-      // Forward: new step or new chapter — push
+      // Forward: new step or new workspace — push
       positionRef.current++;
       suppressLocationDispatch.current = true;
       routerNavigate(currentPath, {
         state: makeEntry({ position: positionRef.current }),
       });
     } else if (newDepth < oldDepth) {
-      // Backward: step popped or chapter closed — go back in Router
+      // Backward: step popped or workspace closed — go back in Router
       const delta = oldDepth - newDepth;
       positionRef.current -= delta;
       suppressLocationDispatch.current = true;
       routerNavigate(-delta);
-    } else if (newChapterId !== oldChapterId) {
-      // Same depth, different chapter — chapter focus/switch — push
+    } else if (newWorkspaceId !== oldWorkspaceId) {
+      // Same depth, different workspace — workspace focus/switch — push
       positionRef.current++;
       suppressLocationDispatch.current = true;
       routerNavigate(currentPath, {
         state: makeEntry({ position: positionRef.current }),
       });
     } else if (newStepId !== oldStepId) {
-      // Same depth, same chapter, different step — replace (swap)
+      // Same depth, same workspace, different step — replace (swap)
       suppressLocationDispatch.current = true;
       routerNavigate(currentPath, {
         replace: true,
@@ -140,8 +140,8 @@ export function useRouterJourneySync() {
 
     depthRef.current = newDepth;
     stepIdRef.current = newStepId;
-    chapterIdRef.current = newChapterId;
-  }, [chapters, activeChapterId, step, routerNavigate]);
+    workspaceIdRef.current = newWorkspaceId;
+  }, [workspaces, activeWorkspaceId, step, routerNavigate]);
 
   // --- Effect 3: Location watcher — Router → journey state ---
   useEffect(() => {
@@ -159,13 +159,13 @@ export function useRouterJourneySync() {
 
     positionRef.current = incoming;
 
-    // Check if the chapter still exists
-    const chapterExists = chaptersRef.current.some(
-      (c) => c.id === data.chapterId,
+    // Check if the workspace still exists
+    const workspaceExists = workspacesRef.current.some(
+      (c) => c.id === data.workspaceId,
     );
 
-    if (!chapterExists) {
-      // Chapter was closed — skip by continuing in same direction
+    if (!workspaceExists) {
+      // Workspace was closed — skip by continuing in same direction
       if (goingBack) {
         routerNavigate(-1);
       } else {
@@ -176,17 +176,17 @@ export function useRouterJourneySync() {
 
     suppressRouterSync.current = true;
 
-    if (data.chapterId !== activeChapterIdRef.current) {
-      // Different chapter — focus it
-      focusChapter(data.chapterId);
+    if (data.workspaceId !== activeWorkspaceIdRef.current) {
+      // Different workspace — focus it
+      focusWorkspace(data.workspaceId);
     } else if (goingBack) {
-      // Same chapter, going back — pop step
+      // Same workspace, going back — pop step
       goBack();
     } else {
-      // Same chapter, going forward — recreate step
+      // Same workspace, going forward — recreate step
       journeyNavigate(data.path, data.label);
     }
-  }, [location, routerNavigate, focusChapter, goBack, journeyNavigate]);
+  }, [location, routerNavigate, focusWorkspace, goBack, journeyNavigate]);
 
   return {
     suppressRouterSync,

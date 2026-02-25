@@ -9,7 +9,7 @@ import { SyncContext, type HistoryStateData } from "./SyncContext";
  * For forward navigation (push, swap, fresh, openOrFocus): calls both
  * journey-stack and Router, with suppress flags to prevent double-sync.
  *
- * For backward navigation (back, closeChapter, focusChapter): calls only
+ * For backward navigation (back, closeWorkspace, focusWorkspace): calls only
  * journey-stack; the sync hook detects the state change and updates Router.
  */
 export function useAppNavigate() {
@@ -19,8 +19,8 @@ export function useAppNavigate() {
     openFresh: journeyOpenFresh,
     openOrFocus: journeyOpenOrFocus,
     goBack: journeyGoBack,
-    closeChapter: journeyCloseChapter,
-    focusChapter: journeyFocusChapter,
+    closeWorkspace: journeyCloseWorkspace,
+    focusWorkspace: journeyFocusWorkspace,
   } = useJourneyNavigate();
 
   const routerNavigate = useNavigate();
@@ -36,7 +36,7 @@ export function useAppNavigate() {
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
-        chapterId: getJourneyState().chapterId,
+        workspaceId: getJourneyState().workspaceId,
         path,
         label,
       };
@@ -53,7 +53,7 @@ export function useAppNavigate() {
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
-        chapterId: getJourneyState().chapterId,
+        workspaceId: getJourneyState().workspaceId,
         path,
         label,
       };
@@ -71,7 +71,7 @@ export function useAppNavigate() {
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
-        chapterId: getJourneyState().chapterId,
+        workspaceId: getJourneyState().workspaceId,
         path,
         label,
       };
@@ -89,7 +89,7 @@ export function useAppNavigate() {
       const state: HistoryStateData = {
         _journeySync: true,
         position: positionRef.current,
-        chapterId: getJourneyState().chapterId,
+        workspaceId: getJourneyState().workspaceId,
         path,
         label,
       };
@@ -105,22 +105,22 @@ export function useAppNavigate() {
     [journeyGoBack],
   );
 
-  const closeChapter = useCallback(
-    (chapterId: string) => {
-      journeyCloseChapter(chapterId);
+  const closeWorkspace = useCallback(
+    (workspaceId: string) => {
+      journeyCloseWorkspace(workspaceId);
     },
-    [journeyCloseChapter],
+    [journeyCloseWorkspace],
   );
 
-  const focusChapter = useCallback(
-    (chapterId: string) => {
-      journeyFocusChapter(chapterId);
+  const focusWorkspace = useCallback(
+    (workspaceId: string) => {
+      journeyFocusWorkspace(workspaceId);
     },
-    [journeyFocusChapter],
+    [journeyFocusWorkspace],
   );
 
   return useMemo(
-    () => ({ push, swap, fresh, openOrFocus, back, closeChapter, focusChapter }),
-    [push, swap, fresh, openOrFocus, back, closeChapter, focusChapter],
+    () => ({ push, swap, fresh, openOrFocus, back, closeWorkspace, focusWorkspace }),
+    [push, swap, fresh, openOrFocus, back, closeWorkspace, focusWorkspace],
   );
 }

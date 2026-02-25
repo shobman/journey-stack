@@ -41,7 +41,7 @@ export function ServiceDetail() {
       </div>
       <CrossNavHint>
         Device links auto-detect as cross-domain. Report links open new
-        chapters.
+        workspaces.
       </CrossNavHint>
       <div
         style={{

@@ -1,18 +1,18 @@
-import { useJourney, useActiveChapter } from "journey-stack";
+import { useJourney, useActiveWorkspace } from "journey-stack";
 import { useAppNavigate } from "../hooks/useAppNavigate";
 
-export function BackBar() {
-  const chapter = useActiveChapter();
-  const { chapters } = useJourney();
+export function Breadcrumbs() {
+  const workspace = useActiveWorkspace();
+  const { workspaces } = useJourney();
   const { back } = useAppNavigate();
 
-  if (!chapter) return null;
+  if (!workspace) return null;
 
-  const hasStepHistory = chapter.steps.length > 1;
-  const hasPreviousChapter = chapters.length > 1;
-  const atChapterRoot = chapter.steps.length === 1;
+  const hasStepHistory = workspace.steps.length > 1;
+  const hasPreviousWorkspace = workspaces.length > 1;
+  const atWorkspaceRoot = workspace.steps.length === 1;
 
-  const steps = chapter.steps;
+  const steps = workspace.steps;
 
   return (
     <div
@@ -26,7 +26,7 @@ export function BackBar() {
         minHeight: "32px",
       }}
     >
-      {(hasStepHistory || (atChapterRoot && hasPreviousChapter)) && (
+      {(hasStepHistory || (atWorkspaceRoot && hasPreviousWorkspace)) && (
         <button
           onClick={() => back()}
           style={{

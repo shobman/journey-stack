@@ -1,8 +1,8 @@
 // Types
 export type {
   JourneyStep,
-  JourneyChapter,
   JourneyWorkspace,
+  JourneyState,
   JourneyMode,
   JourneyConfig,
   JourneyAction,
@@ -12,8 +12,8 @@ export type {
   OpenFreshAction,
   GoBackAction,
   OpenOrFocusAction,
-  CloseChapterAction,
-  FocusChapterAction,
+  CloseWorkspaceAction,
+  FocusWorkspaceAction,
   SignificanceResult,
   BlockerAction,
   JourneyBlockerFn,
@@ -26,7 +26,7 @@ export type { JourneyProviderProps } from "./provider";
 // Hooks
 export {
   useJourney,
-  useActiveChapter,
+  useActiveWorkspace,
   useCurrentStep,
   useJourneyNavigate,
   useJourneyBlock,
@@ -42,3 +42,7 @@ export type { JourneyLinkProps, JourneyLinkRenderProps } from "./journey-link";
 // Utilities (for advanced usage / testing)
 export { resolveSignificance, extractDomain } from "./significance";
 export { classifyGoBack } from "./provider";
+
+// --- Deprecated aliases (remove in next major) ---
+export type { JourneyChapter, CloseChapterAction, FocusChapterAction } from "./deprecated";
+export { useActiveChapter } from "./deprecated";

@@ -5,7 +5,7 @@ import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { JourneyProvider } from "../provider";
 import { JourneyLink } from "../journey-link";
-import { useActiveChapter } from "../hooks";
+import { useActiveWorkspace } from "../hooks";
 
 function Wrapper({ children }: { children: ReactNode }) {
   return <JourneyProvider mode="trail">{children}</JourneyProvider>;
@@ -44,7 +44,7 @@ describe("JourneyLink", () => {
 
   it("navigates on click (renderless)", async () => {
     function TestComponent() {
-      const chapter = useActiveChapter();
+      const workspace = useActiveWorkspace();
       return (
         <div>
           <JourneyLink to="/destination" label="Destination">
@@ -54,7 +54,7 @@ describe("JourneyLink", () => {
               </button>
             )}
           </JourneyLink>
-          <span data-testid="step-count">{chapter?.steps.length ?? 0}</span>
+          <span data-testid="step-count">{workspace?.steps.length ?? 0}</span>
         </div>
       );
     }
@@ -74,13 +74,13 @@ describe("JourneyLink", () => {
 
   it("navigates on click (wrapping)", async () => {
     function TestComponent() {
-      const chapter = useActiveChapter();
+      const workspace = useActiveWorkspace();
       return (
         <div>
           <JourneyLink to="/dest" label="Dest">
             <span>Go</span>
           </JourneyLink>
-          <span data-testid="step-count">{chapter?.steps.length ?? 0}</span>
+          <span data-testid="step-count">{workspace?.steps.length ?? 0}</span>
         </div>
       );
     }

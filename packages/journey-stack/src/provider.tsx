@@ -7,7 +7,7 @@ import type {
   JourneyBlockerFn,
   JourneyConfig,
   JourneyMode,
-  JourneyWorkspace,
+  JourneyState,
 } from "./types";
 
 export type JourneyProviderProps = {
@@ -23,22 +23,22 @@ export type JourneyProviderProps = {
  * by inspecting the current workspace state.
  */
 export function classifyGoBack(
-  state: JourneyWorkspace,
+  state: JourneyState,
   count = 1,
 ): BlockerAction | null {
-  const active = state.chapters.find((c) => c.id === state.activeChapterId);
+  const active = state.workspaces.find((c) => c.id === state.activeWorkspaceId);
   if (!active) return null;
 
   if (active.steps.length > count) {
-    return { type: "back", chapterId: active.id };
+    return { type: "back", workspaceId: active.id };
   }
 
-  // count >= steps → would close the chapter
-  if (state.chapters.length <= 1) {
-    return { type: "closeAll", chapterId: active.id };
+  // count >= steps → would close the workspace
+  if (state.workspaces.length <= 1) {
+    return { type: "closeAll", workspaceId: active.id };
   }
 
-  return { type: "close", chapterId: active.id };
+  return { type: "close", workspaceId: active.id };
 }
 
 export function JourneyProvider({
@@ -78,11 +78,11 @@ export function JourneyProvider({
         }
       }
 
-      if (action.type === "CLOSE_CHAPTER" && blockers.size > 0) {
-        const isLast = stateRef.current.chapters.length <= 1;
+      if (action.type === "CLOSE_WORKSPACE" && blockers.size > 0) {
+        const isLast = stateRef.current.workspaces.length <= 1;
         const blockerAction: BlockerAction = {
           type: isLast ? "closeAll" : "close",
-          chapterId: action.chapterId,
+          workspaceId: action.workspaceId,
         };
         const allAllowed = [...blockers].every((fn) => fn(blockerAction));
         if (!allAllowed) return;

@@ -3,11 +3,11 @@ import type {
   JourneyAction,
   JourneyBlockerFn,
   JourneyConfig,
-  JourneyWorkspace,
+  JourneyState,
 } from "./types";
 
 export type JourneyContextValue = {
-  state: JourneyWorkspace;
+  state: JourneyState;
   dispatch: (action: JourneyAction) => void;
   config: JourneyConfig;
   blockersRef: MutableRefObject<Set<JourneyBlockerFn>>;

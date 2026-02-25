@@ -3,9 +3,9 @@ import { JourneyContext } from "./context";
 import { resolveSignificance } from "./significance";
 import type {
   JourneyBlockerFn,
-  JourneyChapter,
-  JourneyStep,
   JourneyWorkspace,
+  JourneyStep,
+  JourneyState,
   NavigateOptions,
 } from "./types";
 
@@ -18,31 +18,31 @@ function useJourneyContext() {
 }
 
 /**
- * Returns the full workspace state.
+ * Returns the full journey state.
  */
-export function useJourney(): JourneyWorkspace {
+export function useJourney(): JourneyState {
   return useJourneyContext().state;
 }
 
 /**
- * Returns the currently active chapter.
+ * Returns the currently active workspace.
  */
-export function useActiveChapter(): JourneyChapter | undefined {
+export function useActiveWorkspace(): JourneyWorkspace | undefined {
   const { state } = useJourneyContext();
   return useMemo(
-    () => state.chapters.find((c) => c.id === state.activeChapterId),
-    [state.chapters, state.activeChapterId],
+    () => state.workspaces.find((c) => c.id === state.activeWorkspaceId),
+    [state.workspaces, state.activeWorkspaceId],
   );
 }
 
 /**
- * Returns the current step (top of the active chapter's stack).
+ * Returns the current step (top of the active workspace's stack).
  */
 export function useCurrentStep(): JourneyStep | undefined {
-  const chapter = useActiveChapter();
+  const workspace = useActiveWorkspace();
   return useMemo(
-    () => (chapter ? chapter.steps[chapter.steps.length - 1] : undefined),
-    [chapter],
+    () => (workspace ? workspace.steps[workspace.steps.length - 1] : undefined),
+    [workspace],
   );
 }
 
@@ -52,12 +52,16 @@ export type JourneyNavigateFns = {
   openFresh: (path: string, label: string) => void;
   openOrFocus: (path: string, label: string) => void;
   goBack: (count?: number) => void;
-  closeChapter: (chapterId: string) => void;
-  focusChapter: (chapterId: string) => void;
+  closeWorkspace: (workspaceId: string) => void;
+  focusWorkspace: (workspaceId: string) => void;
+  /** @deprecated Use closeWorkspace */
+  closeChapter: (workspaceId: string) => void;
+  /** @deprecated Use focusWorkspace */
+  focusChapter: (workspaceId: string) => void;
 };
 
 /**
- * Returns navigation functions: navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter.
+ * Returns navigation functions: navigate, replace, openFresh, openOrFocus, goBack, closeWorkspace, focusWorkspace.
  */
 export function useJourneyNavigate(): JourneyNavigateFns {
   const { dispatch } = useJourneyContext();
@@ -91,21 +95,26 @@ export function useJourneyNavigate(): JourneyNavigateFns {
     [dispatch],
   );
 
-  const closeChapter = useCallback(
-    (chapterId: string) =>
-      dispatch({ type: "CLOSE_CHAPTER", chapterId }),
+  const closeWorkspace = useCallback(
+    (workspaceId: string) =>
+      dispatch({ type: "CLOSE_WORKSPACE", workspaceId }),
     [dispatch],
   );
 
-  const focusChapter = useCallback(
-    (chapterId: string) =>
-      dispatch({ type: "FOCUS_CHAPTER", chapterId }),
+  const focusWorkspace = useCallback(
+    (workspaceId: string) =>
+      dispatch({ type: "FOCUS_WORKSPACE", workspaceId }),
     [dispatch],
   );
 
   return useMemo(
-    () => ({ navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter }),
-    [navigate, replace, openFresh, openOrFocus, goBack, closeChapter, focusChapter],
+    () => ({
+      navigate, replace, openFresh, openOrFocus, goBack,
+      closeWorkspace, focusWorkspace,
+      closeChapter: closeWorkspace,
+      focusChapter: focusWorkspace,
+    }),
+    [navigate, replace, openFresh, openOrFocus, goBack, closeWorkspace, focusWorkspace],
   );
 }
 
@@ -139,20 +148,20 @@ export function useJourneyBlock(blocker: JourneyBlockerFn): void {
 }
 
 /**
- * Returns true if navigating to `path` would create a new chapter,
- * false if it would extend the current chapter.
+ * Returns true if navigating to `path` would create a new workspace,
+ * false if it would extend the current workspace.
  *
  * Uses the same significance resolution as navigate():
  * 1. If significant is true → return true
  * 2. If significant is false → return false
  * 3. If undefined → resolve from mode (trail always false,
- *    chapters compares domains of current path vs target path)
+ *    workspaces compares domains of current path vs target path)
  *
  * Pure read, no side effects.
  */
 export function useWillBranch(path: string, significant?: boolean): boolean {
   const { state, config } = useJourneyContext();
-  const active = state.chapters.find((c) => c.id === state.activeChapterId);
+  const active = state.workspaces.find((c) => c.id === state.activeWorkspaceId);
   const currentPath = active?.steps[active.steps.length - 1]?.path ?? "/";
   return resolveSignificance(
     significant,
@@ -168,29 +177,29 @@ export function useWillBranch(path: string, significant?: boolean): boolean {
 type HistoryStateData = {
   _journeySync: true;
   position: number;
-  chapterId: string;
+  workspaceId: string;
   path: string;
   label: string;
 };
 
-function computeDepth(state: JourneyWorkspace): number {
-  return state.chapters.reduce((sum, ch) => sum + ch.steps.length, 0);
+function computeDepth(state: JourneyState): number {
+  return state.workspaces.reduce((sum, ch) => sum + ch.steps.length, 0);
 }
 
-function getActiveTopStep(state: JourneyWorkspace): JourneyStep | undefined {
-  const chapter = state.chapters.find((c) => c.id === state.activeChapterId);
-  return chapter ? chapter.steps[chapter.steps.length - 1] : undefined;
+function getActiveTopStep(state: JourneyState): JourneyStep | undefined {
+  const workspace = state.workspaces.find((c) => c.id === state.activeWorkspaceId);
+  return workspace ? workspace.steps[workspace.steps.length - 1] : undefined;
 }
 
 /**
  * Syncs journey state with the browser History API so that the
  * browser back/forward buttons mirror journey navigation.
  *
- * Each history entry stores the active chapter's ID. On popstate:
- * - If the entry's chapter differs from the current → focus that chapter
- * - If same chapter, going back → GO_BACK (pop step)
- * - If same chapter, going forward → NAVIGATE (recreate step)
- * - If the chapter no longer exists → skip (keep going in same direction)
+ * Each history entry stores the active workspace's ID. On popstate:
+ * - If the entry's workspace differs from the current → focus that workspace
+ * - If same workspace, going back → GO_BACK (pop step)
+ * - If same workspace, going forward → NAVIGATE (recreate step)
+ * - If the workspace no longer exists → skip (keep going in same direction)
  *
  * Call once inside the `<JourneyProvider>` tree:
  *
@@ -207,7 +216,7 @@ export function useJourneyBrowserSync(): void {
   const positionRef = useRef(0);
   const depthRef = useRef(computeDepth(state));
   const stepIdRef = useRef(getActiveTopStep(state)?.id ?? "");
-  const chapterIdRef = useRef(state.activeChapterId);
+  const workspaceIdRef = useRef(state.activeWorkspaceId);
 
   // Suppress flags to break feedback loops
   const suppressPushRef = useRef(false); // prevents state→browser sync
@@ -222,7 +231,7 @@ export function useJourneyBrowserSync(): void {
     return {
       _journeySync: true,
       position: positionRef.current,
-      chapterId: state.activeChapterId,
+      workspaceId: state.activeWorkspaceId,
       path: topStep?.path ?? "/",
       label: topStep?.label ?? "Home",
       ...overrides,
@@ -235,7 +244,7 @@ export function useJourneyBrowserSync(): void {
     const data: HistoryStateData = {
       _journeySync: true,
       position: 0,
-      chapterId: state.activeChapterId,
+      workspaceId: state.activeWorkspaceId,
       path: topStep?.path ?? "/",
       label: topStep?.label ?? "Home",
     };
@@ -260,13 +269,13 @@ export function useJourneyBrowserSync(): void {
 
       positionRef.current = incoming;
 
-      // Check if the chapter still exists
-      const chapterExists = stateRef.current.chapters.some(
-        (c) => c.id === data.chapterId,
+      // Check if the workspace still exists
+      const workspaceExists = stateRef.current.workspaces.some(
+        (c) => c.id === data.workspaceId,
       );
 
-      if (!chapterExists) {
-        // Chapter was closed — skip this entry
+      if (!workspaceExists) {
+        // Workspace was closed — skip this entry
         if (goingBack) {
           history.back();
         } else {
@@ -277,14 +286,14 @@ export function useJourneyBrowserSync(): void {
 
       suppressPushRef.current = true;
 
-      if (data.chapterId !== stateRef.current.activeChapterId) {
-        // Different chapter — focus it
-        dispatch({ type: "FOCUS_CHAPTER", chapterId: data.chapterId });
+      if (data.workspaceId !== stateRef.current.activeWorkspaceId) {
+        // Different workspace — focus it
+        dispatch({ type: "FOCUS_WORKSPACE", workspaceId: data.workspaceId });
       } else if (goingBack) {
-        // Same chapter, going back — pop step
+        // Same workspace, going back — pop step
         dispatch({ type: "GO_BACK" });
       } else {
-        // Same chapter, going forward — recreate step
+        // Same workspace, going forward — recreate step
         dispatch({ type: "NAVIGATE", path: data.path, label: data.label });
       }
     };
@@ -297,41 +306,41 @@ export function useJourneyBrowserSync(): void {
   useEffect(() => {
     const newDepth = computeDepth(state);
     const newStepId = getActiveTopStep(state)?.id ?? "";
-    const newChapterId = state.activeChapterId;
+    const newWorkspaceId = state.activeWorkspaceId;
 
     if (suppressPushRef.current) {
       suppressPushRef.current = false;
       depthRef.current = newDepth;
       stepIdRef.current = newStepId;
-      chapterIdRef.current = newChapterId;
+      workspaceIdRef.current = newWorkspaceId;
       return;
     }
 
     const oldDepth = depthRef.current;
     const oldStepId = stepIdRef.current;
-    const oldChapterId = chapterIdRef.current;
+    const oldWorkspaceId = workspaceIdRef.current;
 
     if (newDepth > oldDepth) {
-      // Forward: new step or new chapter — push
+      // Forward: new step or new workspace — push
       positionRef.current++;
       history.pushState(makeEntry({ position: positionRef.current }), "");
     } else if (newDepth < oldDepth) {
-      // Backward: step popped or chapter closed — sync browser back
+      // Backward: step popped or workspace closed — sync browser back
       const delta = oldDepth - newDepth;
       suppressPopRef.current = true;
       positionRef.current -= delta;
       history.go(-delta);
-    } else if (newChapterId !== oldChapterId) {
-      // Same depth, different chapter — chapter focus/switch — push
+    } else if (newWorkspaceId !== oldWorkspaceId) {
+      // Same depth, different workspace — workspace focus/switch — push
       positionRef.current++;
       history.pushState(makeEntry({ position: positionRef.current }), "");
     } else if (newStepId !== oldStepId) {
-      // Same depth, same chapter, different step — replace in place
+      // Same depth, same workspace, different step — replace in place
       history.replaceState(makeEntry(), "");
     }
 
     depthRef.current = newDepth;
     stepIdRef.current = newStepId;
-    chapterIdRef.current = newChapterId;
+    workspaceIdRef.current = newWorkspaceId;
   }, [state]);
 }

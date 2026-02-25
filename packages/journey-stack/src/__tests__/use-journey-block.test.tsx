@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useState, type ReactNode } from "react";
 import { JourneyProvider } from "../provider";
 import {
-  useActiveChapter,
+  useActiveWorkspace,
   useJourney,
   useJourneyBlock,
   useJourneyNavigate,
@@ -14,9 +14,9 @@ function wrapper({ children }: { children: ReactNode }) {
   return <JourneyProvider mode="trail">{children}</JourneyProvider>;
 }
 
-function chaptersWrapper({ children }: { children: ReactNode }) {
+function workspacesWrapper({ children }: { children: ReactNode }) {
   return (
-    <JourneyProvider mode="chapters" domains={["products", "settings"]}>
+    <JourneyProvider mode="workspaces" domains={["products", "settings"]}>
       {children}
     </JourneyProvider>
   );
@@ -30,17 +30,17 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _block: useJourneyBlock(blocker),
         }),
         { wrapper },
       );
 
       act(() => result.current.nav.navigate("/a", "A"));
-      expect(result.current.chapter!.steps).toHaveLength(2);
+      expect(result.current.workspace!.steps).toHaveLength(2);
 
       act(() => result.current.nav.goBack());
-      expect(result.current.chapter!.steps).toHaveLength(2); // blocked
+      expect(result.current.workspace!.steps).toHaveLength(2); // blocked
     });
 
     it("allows GO_BACK when blocker returns true", () => {
@@ -49,7 +49,7 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _block: useJourneyBlock(blocker),
         }),
         { wrapper },
@@ -57,10 +57,10 @@ describe("useJourneyBlock", () => {
 
       act(() => result.current.nav.navigate("/a", "A"));
       act(() => result.current.nav.goBack());
-      expect(result.current.chapter!.steps).toHaveLength(1);
+      expect(result.current.workspace!.steps).toHaveLength(1);
     });
 
-    it("receives action with type 'back' and correct chapterId", () => {
+    it("receives action with type 'back' and correct workspaceId", () => {
       const blocker = vi.fn(() => true);
 
       const { result } = renderHook(
@@ -73,12 +73,12 @@ describe("useJourneyBlock", () => {
       );
 
       act(() => result.current.nav.navigate("/a", "A"));
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.goBack());
       expect(blocker).toHaveBeenCalledWith({
         type: "back",
-        chapterId,
+        workspaceId,
       } satisfies BlockerAction);
     });
 
@@ -88,7 +88,7 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _block: useJourneyBlock(blocker),
         }),
         { wrapper },
@@ -102,7 +102,7 @@ describe("useJourneyBlock", () => {
       act(() => result.current.nav.goBack(2));
 
       expect(blocker).toHaveBeenCalledTimes(1);
-      expect(result.current.chapter!.steps).toHaveLength(2);
+      expect(result.current.workspace!.steps).toHaveLength(2);
     });
 
     it("receives 'close' when count exceeds step count", () => {
@@ -121,19 +121,19 @@ describe("useJourneyBlock", () => {
       act(() => result.current.nav.navigate("/deep", "Deep"));
       blocker.mockClear();
 
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.goBack(5));
 
       expect(blocker).toHaveBeenCalledWith({
         type: "close",
-        chapterId,
+        workspaceId,
       } satisfies BlockerAction);
-      expect(result.current.journey.chapters).toHaveLength(1);
+      expect(result.current.journey.workspaces).toHaveLength(1);
     });
   });
 
-  describe("close (closing a chapter at root)", () => {
-    it("blocks chapter close when blocker returns false", () => {
+  describe("close (closing a workspace at root)", () => {
+    it("blocks workspace close when blocker returns false", () => {
       const blocker = vi.fn(() => false);
 
       const { result } = renderHook(
@@ -146,14 +146,14 @@ describe("useJourneyBlock", () => {
       );
 
       act(() => result.current.nav.openFresh("/other", "Other"));
-      expect(result.current.journey.chapters).toHaveLength(2);
+      expect(result.current.journey.workspaces).toHaveLength(2);
 
-      // At root of "Other" chapter, goBack should close it — but blocker blocks
+      // At root of "Other" workspace, goBack should close it — but blocker blocks
       act(() => result.current.nav.goBack());
-      expect(result.current.journey.chapters).toHaveLength(2); // blocked
+      expect(result.current.journey.workspaces).toHaveLength(2); // blocked
     });
 
-    it("allows chapter close when blocker returns true", () => {
+    it("allows workspace close when blocker returns true", () => {
       const blocker = vi.fn(() => true);
 
       const { result } = renderHook(
@@ -167,7 +167,7 @@ describe("useJourneyBlock", () => {
 
       act(() => result.current.nav.openFresh("/other", "Other"));
       act(() => result.current.nav.goBack());
-      expect(result.current.journey.chapters).toHaveLength(1);
+      expect(result.current.journey.workspaces).toHaveLength(1);
     });
 
     it("receives action with type 'close'", () => {
@@ -183,17 +183,17 @@ describe("useJourneyBlock", () => {
       );
 
       act(() => result.current.nav.openFresh("/other", "Other"));
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.goBack());
       expect(blocker).toHaveBeenCalledWith({
         type: "close",
-        chapterId,
+        workspaceId,
       });
     });
   });
 
-  describe("closeAll (closing the last chapter)", () => {
+  describe("closeAll (closing the last workspace)", () => {
     it("blocks closeAll when blocker returns false", () => {
       const blocker = vi.fn(() => false);
 
@@ -206,13 +206,13 @@ describe("useJourneyBlock", () => {
         { wrapper },
       );
 
-      // At root of the only chapter
-      expect(result.current.journey.chapters).toHaveLength(1);
-      const originalId = result.current.journey.activeChapterId;
+      // At root of the only workspace
+      expect(result.current.journey.workspaces).toHaveLength(1);
+      const originalId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.goBack());
-      // blocked — still same chapter
-      expect(result.current.journey.activeChapterId).toBe(originalId);
+      // blocked — still same workspace
+      expect(result.current.journey.activeWorkspaceId).toBe(originalId);
     });
 
     it("allows closeAll and resets to home", () => {
@@ -227,12 +227,12 @@ describe("useJourneyBlock", () => {
         { wrapper },
       );
 
-      const originalId = result.current.journey.activeChapterId;
+      const originalId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.goBack());
 
-      // New home chapter created (different id)
-      expect(result.current.journey.chapters).toHaveLength(1);
-      expect(result.current.journey.activeChapterId).not.toBe(originalId);
+      // New home workspace created (different id)
+      expect(result.current.journey.workspaces).toHaveLength(1);
+      expect(result.current.journey.activeWorkspaceId).not.toBe(originalId);
     });
 
     it("receives action with type 'closeAll'", () => {
@@ -261,14 +261,14 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _block: useJourneyBlock(blocker),
         }),
         { wrapper },
       );
 
       act(() => result.current.nav.navigate("/a", "A"));
-      expect(result.current.chapter!.steps).toHaveLength(2);
+      expect(result.current.workspace!.steps).toHaveLength(2);
       expect(blocker).not.toHaveBeenCalled();
     });
 
@@ -278,7 +278,7 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _block: useJourneyBlock(blocker),
         }),
         { wrapper },
@@ -288,7 +288,7 @@ describe("useJourneyBlock", () => {
       blocker.mockClear();
 
       act(() => result.current.nav.replace("/b", "B"));
-      expect(result.current.chapter!.steps[1].path).toBe("/b");
+      expect(result.current.workspace!.steps[1].path).toBe("/b");
       expect(blocker).not.toHaveBeenCalled();
     });
 
@@ -305,7 +305,7 @@ describe("useJourneyBlock", () => {
       );
 
       act(() => result.current.nav.openFresh("/fresh", "Fresh"));
-      expect(result.current.journey.chapters).toHaveLength(2);
+      expect(result.current.journey.workspaces).toHaveLength(2);
       expect(blocker).not.toHaveBeenCalled();
     });
   });
@@ -318,7 +318,7 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _blockA: useJourneyBlock(blockerA),
           _blockB: useJourneyBlock(blockerB),
         }),
@@ -328,7 +328,7 @@ describe("useJourneyBlock", () => {
       act(() => result.current.nav.navigate("/a", "A"));
       act(() => result.current.nav.goBack());
 
-      expect(result.current.chapter!.steps).toHaveLength(2); // blocked
+      expect(result.current.workspace!.steps).toHaveLength(2); // blocked
     });
 
     it("allows only when all blockers return true", () => {
@@ -338,7 +338,7 @@ describe("useJourneyBlock", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           _blockA: useJourneyBlock(blockerA),
           _blockB: useJourneyBlock(blockerB),
         }),
@@ -348,7 +348,7 @@ describe("useJourneyBlock", () => {
       act(() => result.current.nav.navigate("/a", "A"));
       act(() => result.current.nav.goBack());
 
-      expect(result.current.chapter!.steps).toHaveLength(1); // allowed
+      expect(result.current.workspace!.steps).toHaveLength(1); // allowed
       expect(blockerA).toHaveBeenCalled();
       expect(blockerB).toHaveBeenCalled();
     });
@@ -364,7 +364,7 @@ describe("useJourneyBlock", () => {
       function TestHarness() {
         const [showBlocker, setShowBlocker] = useState(true);
         const nav = useJourneyNavigate();
-        const chapter = useActiveChapter();
+        const workspace = useActiveWorkspace();
 
         return (
           <>
@@ -378,7 +378,7 @@ describe("useJourneyBlock", () => {
               data-testid="unmount-blocker"
               onClick={() => setShowBlocker(false)}
             />
-            <span data-testid="steps">{chapter?.steps.length ?? 0}</span>
+            <span data-testid="steps">{workspace?.steps.length ?? 0}</span>
           </>
         );
       }
@@ -411,7 +411,7 @@ describe("useJourneyBlock", () => {
       function TestHarness() {
         const [shouldBlock, setShouldBlock] = useState(true);
         const nav = useJourneyNavigate();
-        const chapter = useActiveChapter();
+        const workspace = useActiveWorkspace();
 
         useJourneyBlock((action) => {
           calls.push(action);
@@ -429,7 +429,7 @@ describe("useJourneyBlock", () => {
               data-testid="allow"
               onClick={() => setShouldBlock(false)}
             />
-            <span data-testid="steps">{chapter?.steps.length ?? 0}</span>
+            <span data-testid="steps">{workspace?.steps.length ?? 0}</span>
           </>
         );
       }

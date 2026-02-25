@@ -12,8 +12,8 @@ export function extractDomain(path: string): string {
 
 /**
  * Mode-level significance strategy.
- * - trail: always false (never creates a new chapter)
- * - chapters: compares domains of current vs target path
+ * - trail: always false (never creates a new workspace)
+ * - workspaces: compares domains of current vs target path
  * - route-derived: stub, returns undefined
  */
 function modeStrategy(
@@ -26,7 +26,7 @@ function modeStrategy(
     case "trail":
       return false;
 
-    case "chapters": {
+    case "workspaces": {
       const currentDomain = extractDomain(currentPath);
       const targetDomain = extractDomain(targetPath);
       if (
@@ -34,7 +34,7 @@ function modeStrategy(
         domains.length > 0 &&
         !domains.includes(targetDomain)
       ) {
-        // Target domain not in the declared domain list — extend current chapter
+        // Target domain not in the declared domain list — extend current workspace
         return false;
       }
       return currentDomain !== targetDomain;
@@ -50,7 +50,7 @@ function modeStrategy(
  * Resolves significance through 3 layers:
  * 1. Link-level explicit override
  * 2. Mode strategy
- * 3. Default: extend current chapter (false)
+ * 3. Default: extend current workspace (false)
  */
 export function resolveSignificance(
   linkLevel: boolean | undefined,
@@ -70,6 +70,6 @@ export function resolveSignificance(
     return modeResult;
   }
 
-  // Layer 3: default — extend current chapter
+  // Layer 3: default — extend current workspace
   return false;
 }

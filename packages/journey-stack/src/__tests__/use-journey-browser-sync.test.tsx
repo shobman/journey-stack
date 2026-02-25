@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { JourneyProvider } from "../provider";
 import {
-  useActiveChapter,
+  useActiveWorkspace,
   useCurrentStep,
   useJourney,
   useJourneyBrowserSync,
@@ -36,9 +36,9 @@ function wrapper({ children }: { children: ReactNode }) {
   return <JourneyProvider mode="trail">{children}</JourneyProvider>;
 }
 
-function chaptersWrapper({ children }: { children: ReactNode }) {
+function workspacesWrapper({ children }: { children: ReactNode }) {
   return (
-    <JourneyProvider mode="chapters" domains={["products", "settings"]}>
+    <JourneyProvider mode="workspaces" domains={["products", "settings"]}>
       {children}
     </JourneyProvider>
   );
@@ -51,7 +51,7 @@ function firePopState(state: unknown) {
 
 describe("useJourneyBrowserSync", () => {
   describe("initialization", () => {
-    it("replaceState on mount with position 0 and chapterId", () => {
+    it("replaceState on mount with position 0 and workspaceId", () => {
       const { result } = renderHook(
         () => {
           useJourneyBrowserSync();
@@ -64,7 +64,7 @@ describe("useJourneyBrowserSync", () => {
         expect.objectContaining({
           _journeySync: true,
           position: 0,
-          chapterId: result.current.journey.activeChapterId,
+          workspaceId: result.current.journey.activeWorkspaceId,
           path: "/",
           label: "Home",
         }),
@@ -74,7 +74,7 @@ describe("useJourneyBrowserSync", () => {
   });
 
   describe("app-initiated forward navigation", () => {
-    it("pushState with chapterId when navigate adds a step", () => {
+    it("pushState with workspaceId when navigate adds a step", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
@@ -95,7 +95,7 @@ describe("useJourneyBrowserSync", () => {
         expect.objectContaining({
           _journeySync: true,
           position: 1,
-          chapterId: result.current.journey.activeChapterId,
+          workspaceId: result.current.journey.activeWorkspaceId,
           path: "/page1",
           label: "Page 1",
         }),
@@ -103,7 +103,7 @@ describe("useJourneyBrowserSync", () => {
       );
     });
 
-    it("pushState when openFresh creates a chapter", () => {
+    it("pushState when openFresh creates a workspace", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
@@ -197,87 +197,86 @@ describe("useJourneyBrowserSync", () => {
     });
   });
 
-  describe("chapter focus pushes history", () => {
-    it("pushState when focusChapter switches active chapter", () => {
+  describe("workspace focus pushes history", () => {
+    it("pushState when focusWorkspace switches active workspace", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
-        { wrapper: chaptersWrapper },
+        { wrapper: workspacesWrapper },
       );
 
       act(() => result.current.nav.openOrFocus("/products", "Products"));
       act(() => result.current.nav.openOrFocus("/settings", "Settings"));
 
-      const settingsId = result.current.journey.activeChapterId;
-      const productsChapter = result.current.journey.chapters.find(
+      const productsWorkspace = result.current.journey.workspaces.find(
         (c) => c.domain === "products",
       )!;
 
       pushStateSpy.mockClear();
 
       act(() => {
-        result.current.nav.focusChapter(productsChapter.id);
+        result.current.nav.focusWorkspace(productsWorkspace.id);
       });
 
       expect(pushStateSpy).toHaveBeenCalledTimes(1);
       expect(pushStateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          chapterId: productsChapter.id,
+          workspaceId: productsWorkspace.id,
           position: 3,
         }),
         "",
       );
-      expect(result.current.journey.activeChapterId).toBe(productsChapter.id);
+      expect(result.current.journey.activeWorkspaceId).toBe(productsWorkspace.id);
     });
   });
 
-  describe("browser back with chapter-aware popstate", () => {
-    it("GO_BACK when same chapter going back", () => {
+  describe("browser back with workspace-aware popstate", () => {
+    it("GO_BACK when same workspace going back", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           step: useCurrentStep(),
-          chapter: useActiveChapter(),
+          workspace: useActiveWorkspace(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
         { wrapper },
       );
 
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.navigate("/a", "A"));
       act(() => result.current.nav.navigate("/b", "B"));
-      expect(result.current.chapter!.steps).toHaveLength(3);
+      expect(result.current.workspace!.steps).toHaveLength(3);
 
       act(() => {
         firePopState({
           _journeySync: true,
           position: 1,
-          chapterId,
+          workspaceId,
           path: "/a",
           label: "A",
         });
       });
 
       expect(result.current.step!.path).toBe("/a");
-      expect(result.current.chapter!.steps).toHaveLength(2);
+      expect(result.current.workspace!.steps).toHaveLength(2);
     });
 
-    it("FOCUS_CHAPTER when different chapter going back", () => {
+    it("FOCUS_WORKSPACE when different workspace going back", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
-        { wrapper: chaptersWrapper },
+        { wrapper: workspacesWrapper },
       );
 
       act(() => result.current.nav.openOrFocus("/products", "Products"));
-      const productsId = result.current.journey.activeChapterId;
+      const productsId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.openOrFocus("/settings", "Settings"));
       // position=2, active=settings
@@ -287,15 +286,15 @@ describe("useJourneyBrowserSync", () => {
         firePopState({
           _journeySync: true,
           position: 1,
-          chapterId: productsId,
+          workspaceId: productsId,
           path: "/products",
           label: "Products",
         });
       });
 
       // Should focus products, not GO_BACK
-      expect(result.current.journey.activeChapterId).toBe(productsId);
-      expect(result.current.journey.chapters).toHaveLength(3); // all chapters intact
+      expect(result.current.journey.activeWorkspaceId).toBe(productsId);
+      expect(result.current.journey.workspaces).toHaveLength(3); // all workspaces intact
     });
 
     it("does not pushState when processing popstate back", () => {
@@ -308,7 +307,7 @@ describe("useJourneyBrowserSync", () => {
         { wrapper },
       );
 
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.navigate("/a", "A"));
       pushStateSpy.mockClear();
 
@@ -316,7 +315,7 @@ describe("useJourneyBrowserSync", () => {
         firePopState({
           _journeySync: true,
           position: 0,
-          chapterId,
+          workspaceId,
           path: "/",
           label: "Home",
         });
@@ -326,8 +325,8 @@ describe("useJourneyBrowserSync", () => {
     });
   });
 
-  describe("browser forward with chapter-aware popstate", () => {
-    it("NAVIGATE when same chapter going forward", () => {
+  describe("browser forward with workspace-aware popstate", () => {
+    it("NAVIGATE when same workspace going forward", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
@@ -338,7 +337,7 @@ describe("useJourneyBrowserSync", () => {
         { wrapper },
       );
 
-      const chapterId = result.current.journey.activeChapterId;
+      const workspaceId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.navigate("/a", "A"));
 
       // Browser back
@@ -346,20 +345,20 @@ describe("useJourneyBrowserSync", () => {
         firePopState({
           _journeySync: true,
           position: 0,
-          chapterId,
+          workspaceId,
           path: "/",
           label: "Home",
         });
       });
       expect(result.current.step!.path).toBe("/");
 
-      // Browser forward — same chapter, should NAVIGATE
+      // Browser forward — same workspace, should NAVIGATE
       pushStateSpy.mockClear();
       act(() => {
         firePopState({
           _journeySync: true,
           position: 1,
-          chapterId,
+          workspaceId,
           path: "/a",
           label: "A",
         });
@@ -369,65 +368,65 @@ describe("useJourneyBrowserSync", () => {
       expect(pushStateSpy).not.toHaveBeenCalled();
     });
 
-    it("FOCUS_CHAPTER when different chapter going forward", () => {
+    it("FOCUS_WORKSPACE when different workspace going forward", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
-        { wrapper: chaptersWrapper },
+        { wrapper: workspacesWrapper },
       );
 
-      const homeId = result.current.journey.activeChapterId;
+      const homeId = result.current.journey.activeWorkspaceId;
       act(() => result.current.nav.openOrFocus("/products", "Products"));
-      const productsId = result.current.journey.activeChapterId;
+      const productsId = result.current.journey.activeWorkspaceId;
 
       // Browser back to home
       act(() => {
         firePopState({
           _journeySync: true,
           position: 0,
-          chapterId: homeId,
+          workspaceId: homeId,
           path: "/",
           label: "Home",
         });
       });
-      expect(result.current.journey.activeChapterId).toBe(homeId);
+      expect(result.current.journey.activeWorkspaceId).toBe(homeId);
 
-      // Browser forward to products — different chapter
+      // Browser forward to products — different workspace
       act(() => {
         firePopState({
           _journeySync: true,
           position: 1,
-          chapterId: productsId,
+          workspaceId: productsId,
           path: "/products",
           label: "Products",
         });
       });
 
-      expect(result.current.journey.activeChapterId).toBe(productsId);
-      expect(result.current.journey.chapters).toHaveLength(2); // both intact
+      expect(result.current.journey.activeWorkspaceId).toBe(productsId);
+      expect(result.current.journey.workspaces).toHaveLength(2); // both intact
     });
   });
 
-  describe("skips closed chapters", () => {
-    it("calls history.back when popstate references a closed chapter", () => {
+  describe("skips closed workspaces", () => {
+    it("calls history.back when popstate references a closed workspace", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
-        { wrapper: chaptersWrapper },
+        { wrapper: workspacesWrapper },
       );
 
       act(() => result.current.nav.openOrFocus("/products", "Products"));
-      const productsId = result.current.journey.activeChapterId;
+      const productsId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.openOrFocus("/settings", "Settings"));
-      // Close products chapter (triggers history.go(-1), sets suppressPop)
-      act(() => result.current.nav.closeChapter(productsId));
+      // Close products workspace (triggers history.go(-1), sets suppressPop)
+      act(() => result.current.nav.closeWorkspace(productsId));
       // jsdom doesn't fire popstate from history.go(), so clear the flag
       act(() => firePopState(null));
 
@@ -438,7 +437,7 @@ describe("useJourneyBrowserSync", () => {
         firePopState({
           _journeySync: true,
           position: 0,
-          chapterId: productsId,
+          workspaceId: productsId,
           path: "/products",
           label: "Products",
         });
@@ -448,22 +447,22 @@ describe("useJourneyBrowserSync", () => {
       expect(backSpy).toHaveBeenCalled();
     });
 
-    it("calls history.forward when forward popstate references a closed chapter", () => {
+    it("calls history.forward when forward popstate references a closed workspace", () => {
       const { result } = renderHook(
         () => ({
           nav: useJourneyNavigate(),
           journey: useJourney(),
           _sync: useJourneyBrowserSync(),
         }),
-        { wrapper: chaptersWrapper },
+        { wrapper: workspacesWrapper },
       );
 
       act(() => result.current.nav.openOrFocus("/products", "Products"));
-      const productsId = result.current.journey.activeChapterId;
+      const productsId = result.current.journey.activeWorkspaceId;
 
       act(() => result.current.nav.openOrFocus("/settings", "Settings"));
       // Close products (triggers history.go(-1), sets suppressPop)
-      act(() => result.current.nav.closeChapter(productsId));
+      act(() => result.current.nav.closeWorkspace(productsId));
       // Clear suppressPop (jsdom doesn't fire popstate from go())
       act(() => firePopState(null));
 
@@ -474,7 +473,7 @@ describe("useJourneyBrowserSync", () => {
         firePopState({
           _journeySync: true,
           position: 2,
-          chapterId: productsId,
+          workspaceId: productsId,
           path: "/products",
           label: "Products",
         });

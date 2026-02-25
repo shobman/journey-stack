@@ -3,9 +3,9 @@ import { JourneyProvider } from "journey-stack";
 import { SyncContext } from "./hooks/SyncContext";
 import { useRouterJourneySync } from "./hooks/useRouterJourneySync";
 import { TopNav } from "./components/TopNav";
-import { ChapterTabBar } from "./components/ChapterTabBar";
-import { BackBar } from "./components/BackBar";
-import { ContextualSidebar } from "./components/ContextualSidebar";
+import { WorkspaceTabBar } from "./components/WorkspaceTabBar";
+import { Breadcrumbs } from "./components/Breadcrumbs";
+import { SideNav } from "./components/SideNav";
 import { Dashboard } from "./pages/Dashboard";
 import { DeviceList } from "./pages/DeviceList";
 import { DeviceDetail } from "./pages/DeviceDetail";
@@ -19,7 +19,7 @@ import { ReportDetail } from "./pages/ReportDetail";
 function RootLayout() {
   return (
     <JourneyProvider
-      mode="chapters"
+      mode="workspaces"
       domains={["dashboard", "companies"]}
       homePath="/dashboard"
       homeLabel="Dashboard"
@@ -53,9 +53,9 @@ function AppShell() {
       }}
     >
       <TopNav />
-      <ChapterTabBar />
+      <WorkspaceTabBar />
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <ContextualSidebar />
+        <SideNav />
         <div
           style={{
             flex: 1,
@@ -64,7 +64,7 @@ function AppShell() {
             overflow: "hidden",
           }}
         >
-          <BackBar />
+          <Breadcrumbs />
           <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
             <Outlet />
           </div>

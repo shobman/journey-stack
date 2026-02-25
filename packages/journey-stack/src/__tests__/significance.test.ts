@@ -19,21 +19,21 @@ describe("extractDomain", () => {
 describe("resolveSignificance", () => {
   describe("layer 1: link-level override", () => {
     it("returns true when explicitly significant", () => {
-      expect(resolveSignificance(true, "chapters", "/a", "/a/1", ["a"])).toBe(
+      expect(resolveSignificance(true, "workspaces", "/a", "/a/1", ["a"])).toBe(
         true,
       );
     });
 
     it("returns false when explicitly not significant", () => {
       expect(
-        resolveSignificance(false, "chapters", "/a", "/b", ["a", "b"]),
+        resolveSignificance(false, "workspaces", "/a", "/b", ["a", "b"]),
       ).toBe(false);
     });
   });
 
   describe("layer 2: mode strategy", () => {
     describe("trail mode", () => {
-      it("always returns false (never creates chapters)", () => {
+      it("always returns false (never creates workspaces)", () => {
         expect(
           resolveSignificance(undefined, "trail", "/a", "/b"),
         ).toBe(false);
@@ -43,10 +43,10 @@ describe("resolveSignificance", () => {
       });
     });
 
-    describe("chapters mode", () => {
+    describe("workspaces mode", () => {
       it("returns true when domain changes", () => {
         expect(
-          resolveSignificance(undefined, "chapters", "/products/1", "/settings", [
+          resolveSignificance(undefined, "workspaces", "/products/1", "/settings", [
             "products",
             "settings",
           ]),
@@ -57,7 +57,7 @@ describe("resolveSignificance", () => {
         expect(
           resolveSignificance(
             undefined,
-            "chapters",
+            "workspaces",
             "/products/1",
             "/products/2",
             ["products"],
@@ -69,7 +69,7 @@ describe("resolveSignificance", () => {
         expect(
           resolveSignificance(
             undefined,
-            "chapters",
+            "workspaces",
             "/products/1",
             "/unknown/page",
             ["products", "settings"],
@@ -88,7 +88,7 @@ describe("resolveSignificance", () => {
   });
 
   describe("layer 3: default", () => {
-    it("defaults to false (extend current chapter)", () => {
+    it("defaults to false (extend current workspace)", () => {
       expect(
         resolveSignificance(undefined, "route-derived", "/a", "/b"),
       ).toBe(false);
