@@ -11,6 +11,7 @@ import {
   SidebarAction,
   SidebarLink,
 } from "./shared";
+import { AppLink } from "./AppLink";
 import { ComparePanel } from "./ComparePanel";
 
 export function SideNav() {
@@ -77,18 +78,10 @@ export function SideNav() {
 function DashboardSidebar() {
   return (
     <SidebarSection title="Quick Access">
-      <SidebarLink to="/companies" label="All Companies" icon="◉">
-        All Companies
-      </SidebarLink>
-      <SidebarLink to="/devices" label="All Devices" icon="◫">
-        All Devices
-      </SidebarLink>
-      <SidebarLink to="/services" label="All Services" icon="△">
-        All Services
-      </SidebarLink>
-      <SidebarLink to="/reports" label="All Reports" icon="◇">
-        All Reports
-      </SidebarLink>
+      <AppLink to="/companies" label="All Companies" significant />
+      <AppLink to="/devices" label="All Devices" significant />
+      <AppLink to="/services" label="All Services" significant />
+      <AppLink to="/reports" label="All Reports" significant />
     </SidebarSection>
   );
 }
