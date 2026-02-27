@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+.vite/
 
 # pnpm
 .pnpm-store/
@@ -30,3 +31,6 @@ coverage/
 
 # Logs
 *.log
+
+# Claude Code
+.claude/
