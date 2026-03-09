@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 import { JourneyContext, type JourneyContextValue } from "./context";
 import { createInitialState, journeyReducer } from "./reducer";
 import type {
@@ -15,6 +15,10 @@ export type JourneyProviderProps = {
   domains?: string[];
   homePath?: string;
   homeLabel?: string;
+  /** Pre-hydrated state (e.g. from sessionStorage). Skips default initialization. */
+  initialState?: JourneyState;
+  /** Called after every state change. Use to persist state externally. */
+  onStateChange?: (state: JourneyState) => void;
   children: ReactNode;
 };
 
@@ -46,6 +50,8 @@ export function JourneyProvider({
   domains,
   homePath,
   homeLabel,
+  initialState,
+  onStateChange,
   children,
 }: JourneyProviderProps) {
   const config = useMemo<JourneyConfig>(
@@ -56,9 +62,20 @@ export function JourneyProvider({
   const [state, rawDispatch] = useReducer(
     (s: ReturnType<typeof createInitialState>, a: JourneyAction) =>
       journeyReducer(s, a, config),
-    config,
-    createInitialState,
+    initialState ?? createInitialState(config),
   );
+
+  // Notify consumer of state changes for persistence
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+  const prevStateRef = useRef(state);
+
+  useEffect(() => {
+    if (state !== prevStateRef.current) {
+      prevStateRef.current = state;
+      onStateChangeRef.current?.(state);
+    }
+  }, [state]);
 
   const blockersRef = useRef<Set<JourneyBlockerFn>>(new Set());
 
