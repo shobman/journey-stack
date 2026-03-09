@@ -5,8 +5,9 @@ node_modules/
 dist/
 .vite/
 
-# pnpm
+# pnpm (npm lock files are not used in this monorepo)
 .pnpm-store/
+package-lock.json
 
 # TypeScript
 *.tsbuildinfo
