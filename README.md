@@ -344,7 +344,7 @@ import { JourneyLink } from 'journey-stack';
 
 ```ts
 type JourneyStep = {
-  id: string;         // unique per visit (crypto.randomUUID)
+  id: string;         // unique per visit (UUID v4)
   path: string;
   label: string;
   timestamp: number;

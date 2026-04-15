@@ -18,8 +18,22 @@ export function resetWorkspaceCounter(): void {
   workspaceCounter = 0;
 }
 
+function generateStepId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback for insecure contexts (HTTP on non-localhost).
+  // crypto.getRandomValues is available in all modern browsers regardless of context.
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const h = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"));
+  return `${h.slice(0, 4).join("")}-${h.slice(4, 6).join("")}-${h.slice(6, 8).join("")}-${h.slice(8, 10).join("")}-${h.slice(10).join("")}`;
+}
+
 function createStep(path: string, label: string): JourneyStep {
-  return { id: crypto.randomUUID(), path, label, timestamp: Date.now() };
+  return { id: generateStepId(), path, label, timestamp: Date.now() };
 }
 
 function createWorkspace(path: string, label: string): JourneyWorkspace {
