@@ -1,6 +1,6 @@
 {
   "name": "journey-stack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Headless React navigation library that tracks user journeys as workspaces",
   "type": "module",
   "main": "./dist/index.cjs",
